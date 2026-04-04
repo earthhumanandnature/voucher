@@ -448,16 +448,20 @@ function sc(label, val, style) {
 /* ─── TRACK LOGIN ─── */
 function trackUserLogin(user) {
   var ref = db.collection("users").doc(user.email);
-  ref.get().then(function(snap) {
-    var cur = snap.exists ? (snap.data().loginCount || 0) : 0;
-    return ref.set({
-      email: user.email,
-      displayName: user.displayName || "",
-      photoURL: user.photoURL || "",
-      lastLogin: Date.now(),
-      loginCount: cur + 1
-    }, { merge: true });
-  }).catch(function(e) { console.warn("trackUserLogin lỗi (kiểm tra Firestore Rules):", e); });
+  db.runTransaction(function(tx) {
+    return tx.get(ref).then(function(snap) {
+      var cur = snap.exists ? (snap.data().loginCount || 0) : 0;
+      tx.set(ref, {
+        email: user.email,
+        displayName: user.displayName || "",
+        photoURL: user.photoURL || "",
+        lastLogin: Date.now(),
+        loginCount: cur + 1
+      }, { merge: true });
+    });
+  }).catch(function(e) {
+    console.warn("trackUserLogin thất bại — kiểm tra Firestore Rules:", e.message);
+  });
 }
 
 /* ─── USERS LISTEN (owner only) ─── */
