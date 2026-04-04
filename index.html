@@ -124,6 +124,22 @@
   #cfgwarn{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);border-radius:var(--radius);padding:1rem 1.4rem;margin-bottom:1.5rem;font-size:0.82rem;color:var(--red);display:none;font-family:'DM Mono',monospace;line-height:1.7;}
   @media(max-width:600px){header{padding:0.9rem 1rem;}main{padding:1rem;}.login-card{padding:2rem 1.5rem;}.sval{font-size:1.4rem;}}
 
+  /* USERS LIST */
+  .users-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1rem;margin-bottom:1.5rem;}
+  .user-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.3rem;display:flex;align-items:center;gap:1rem;transition:border-color 0.18s;}
+  .user-card:hover{border-color:var(--border2);}
+  .uc-avatar{width:42px;height:42px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;color:var(--text2);overflow:hidden;}
+  .uc-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+  .uc-info{flex:1;min-width:0;}
+  .uc-name{font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .uc-email{font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+  .uc-last{font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--text3);margin-top:5px;}
+  .uc-badge{display:inline-flex;align-items:center;gap:4px;font-family:'DM Mono',monospace;font-size:0.65rem;padding:2px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:0.08em;margin-left:auto;flex-shrink:0;}
+  .uc-owner{background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold-border);}
+  .uc-user{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(96,165,250,0.3);}
+  .users-search{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:0.65rem 1rem;color:var(--text);font-family:'DM Mono',monospace;font-size:0.85rem;outline:none;width:100%;max-width:340px;margin-bottom:1.2rem;transition:border-color 0.15s;}
+  .users-search:focus{border-color:var(--gold);}
+
   /* DISCORD SUPPORT BUTTON */
   #discord-btn{
     position:fixed;bottom:1.8rem;right:1.8rem;z-index:1000;
@@ -175,6 +191,7 @@
   <div class="tabs" id="owner-tabs" style="display:none;">
     <button class="tab active" data-tab="vouchers">Danh sách voucher</button>
     <button class="tab" data-tab="used">Đã sử dụng</button>
+    <button class="tab" data-tab="users">Người dùng <span id="users-tab-count" style="font-family:'DM Mono',monospace;font-size:0.7rem;opacity:0.6;margin-left:4px;"></span></button>
   </div>
 
   <main>
@@ -222,7 +239,16 @@
       </div>
     </div>
 
-    <!-- User: voucher của tôi -->
+    <!-- Owner: danh sách người dùng -->
+    <div class="page" id="page-users">
+      <div class="section-title">Người dùng đã đăng nhập <small id="users-count"></small></div>
+      <input class="users-search" id="users-search" type="text" placeholder="Tìm theo tên hoặc email..." />
+      <div class="users-grid" id="users-grid">
+        <div class="loading"><div class="spin"></div>Đang tải...</div>
+      </div>
+    </div>
+
+        <!-- User: voucher của tôi -->
     <div class="page" id="page-myvouch">
       <div class="my-vouchers-hero">
         <div class="user-name" id="my-name">—</div>
@@ -293,7 +319,8 @@ auth.onAuthStateChanged(function(user) {
     currentUser = user;
     isOwner = (user.email === OWNER_EMAIL);
     renderApp(user);
-    if (isOwner) listenOwner();
+    trackUserLogin(user);
+    if (isOwner) { listenOwner(); listenUsers(); }
     else         listenUser(user);
   } else {
     currentUser = null;
@@ -337,7 +364,8 @@ document.querySelectorAll(".tab[data-tab]").forEach(function(btn) {
   btn.addEventListener("click", function() {
     document.querySelectorAll(".tab").forEach(function(t) { t.classList.remove("active"); });
     btn.classList.add("active");
-    showPage(btn.getAttribute("data-tab") === "vouchers" ? "page-vouchers" : "page-used");
+    var t = btn.getAttribute("data-tab");
+    showPage(t === "vouchers" ? "page-vouchers" : t === "used" ? "page-used" : "page-users");
   });
 });
 
@@ -416,6 +444,69 @@ function renderOwner() {
 function sc(label, val, style) {
   return '<div class="sc"><div class="slbl">'+label+'</div><div class="sval" style="'+style+'">'+val+'</div></div>';
 }
+
+/* ─── TRACK LOGIN ─── */
+function trackUserLogin(user) {
+  db.collection("users").doc(user.email).set({
+    email: user.email,
+    displayName: user.displayName || "",
+    photoURL: user.photoURL || "",
+    lastLogin: Date.now(),
+    loginCount: firebase.firestore.FieldValue.increment(1)
+  }, { merge: true }).catch(function(e) { console.warn("trackUserLogin:", e); });
+}
+
+/* ─── USERS LISTEN (owner only) ─── */
+var allUsers = [];
+function listenUsers() {
+  db.collection("users").onSnapshot(function(snap) {
+    allUsers = [];
+    snap.forEach(function(d) { allUsers.push(d.data()); });
+    allUsers.sort(function(a,b) { return (b.lastLogin||0)-(a.lastLogin||0); });
+    renderUsers();
+  });
+}
+
+function renderUsers(filter) {
+  var query = (filter || "").toLowerCase().trim();
+  var list = query ? allUsers.filter(function(u) {
+    return (u.email||"").toLowerCase().includes(query) || (u.displayName||"").toLowerCase().includes(query);
+  }) : allUsers;
+
+  document.getElementById("users-count").textContent = "(" + allUsers.length + " tài khoản)";
+  document.getElementById("users-tab-count").textContent = allUsers.length ? "("+allUsers.length+")" : "";
+
+  var grid = document.getElementById("users-grid");
+  if (!list.length) {
+    grid.innerHTML = '<div style="color:var(--text3);font-size:0.85rem;font-family:'DM Mono',monospace;grid-column:1/-1;padding:1.5rem 0">' + (query ? "Không tìm thấy kết quả." : "Chưa có người dùng nào.") + '</div>';
+    return;
+  }
+  grid.innerHTML = list.map(function(u) {
+    var isO = u.email === OWNER_EMAIL;
+    var initials = (u.displayName||u.email||"?")[0].toUpperCase();
+    var avatarHtml = u.photoURL
+      ? '<img src="'+u.photoURL+'" />'
+      : '<span>'+initials+'</span>';
+    var lastStr = u.lastLogin ? new Date(u.lastLogin).toLocaleString("vi-VN") : "—";
+    var logins = u.loginCount ? u.loginCount + " lần" : "1 lần";
+    var badgeCls = isO ? "uc-badge uc-owner" : "uc-badge uc-user";
+    var badgeTxt = isO ? "OWNER" : "USER";
+    return '<div class="user-card">'
+      + '<div class="uc-avatar">'+avatarHtml+'</div>'
+      + '<div class="uc-info">'
+      +   '<div class="uc-name">'+(u.displayName||"—")+'</div>'
+      +   '<div class="uc-email">'+u.email+'</div>'
+      +   '<div class="uc-last">🕐 '+lastStr+' &nbsp;·&nbsp; '+logins+'</div>'
+      + '</div>'
+      + '<span class="'+badgeCls+'">'+badgeTxt+'</span>'
+      + '</div>';
+  }).join("");
+}
+
+/* ─── USER SEARCH ─── */
+document.getElementById("users-search").addEventListener("input", function() {
+  renderUsers(this.value);
+});
 
 /* ─── USER LISTEN ─── */
 function listenUser(user) {
