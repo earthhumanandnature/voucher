@@ -128,7 +128,7 @@
   .users-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1rem;margin-bottom:1.5rem;}
   .user-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.3rem;display:flex;align-items:center;gap:1rem;transition:border-color 0.18s;}
   .user-card:hover{border-color:var(--border2);}
-  .uc-avatar{width:42px;height:42px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;color:var(--text2);overflow:hidden;}
+  .uc-avatar{width:42px;height:42px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;color:var(--text2);overflow:hidden;position:relative;}
   .uc-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
   .uc-info{flex:1;min-width:0;}
   .uc-name{font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -139,6 +139,21 @@
   .uc-user{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(96,165,250,0.3);}
   .users-search{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:0.65rem 1rem;color:var(--text);font-family:'DM Mono',monospace;font-size:0.85rem;outline:none;width:100%;max-width:340px;margin-bottom:1.2rem;transition:border-color 0.15s;}
   .users-search:focus{border-color:var(--gold);}
+
+  /* ONLINE STATUS */
+  .online-indicator{position:absolute;bottom:2px;right:2px;width:12px;height:12px;border-radius:50%;border:2px solid var(--surface);background:var(--green);}
+  .offline-indicator{position:absolute;bottom:2px;right:2px;width:12px;height:12px;border-radius:50%;border:2px solid var(--surface);background:var(--text3);}
+  .online-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:4px;}
+  .offline-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--text3);margin-right:4px;}
+
+  /* OWNER DASHBOARD */
+  .dashboard-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:2rem;}
+  .dashboard-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem 1.5rem;}
+  .dashboard-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:1rem;color:var(--text);}
+  .dashboard-metric{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;}
+  .dashboard-label{font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;}
+  .dashboard-value{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;color:var(--gold);}
+  .dashboard-subtitle{font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--text2);margin-top:0.5rem;}
 
   /* DISCORD SUPPORT BUTTON */
   #discord-btn{
@@ -191,6 +206,7 @@
   <div class="tabs" id="owner-tabs" style="display:none;">
     <button class="tab active" data-tab="vouchers">Danh sách voucher</button>
     <button class="tab" data-tab="used">Đã sử dụng</button>
+    <button class="tab" data-tab="dashboard">Dashboard</button>
     <button class="tab" data-tab="users">Người dùng <span id="users-tab-count" style="font-family:'DM Mono',monospace;font-size:0.7rem;opacity:0.6;margin-left:4px;"></span></button>
   </div>
 
@@ -248,6 +264,77 @@
       </div>
     </div>
 
+    <!-- Owner: Dashboard -->
+    <div class="page" id="page-dashboard">
+      <div class="section-title">Owner Dashboard <small>Thống kê chi tiết</small></div>
+      
+      <div class="dashboard-stats">
+        <div class="dashboard-card">
+          <div class="dashboard-title">👥 Thống kê người dùng</div>
+          <div class="dashboard-metric">
+            <span class="dashboard-label">Tổng người dùng</span>
+            <span class="dashboard-value" id="dash-total-users">0</span>
+          </div>
+          <div class="dashboard-metric">
+            <span class="dashboard-label">Đang online</span>
+            <span class="dashboard-value" id="dash-online-users" style="color:var(--green);">0</span>
+          </div>
+          <div class="dashboard-metric">
+            <span class="dashboard-label">Offline</span>
+            <span class="dashboard-value" id="dash-offline-users" style="color:var(--text3);">0</span>
+          </div>
+        </div>
+
+        <div class="dashboard-card">
+          <div class="dashboard-title">🎟️ Thống kê voucher</div>
+          <div class="dashboard-metric">
+            <span class="dashboard-label">Tổng voucher</span>
+            <span class="dashboard-value" id="dash-total-vouchers">0</span>
+          </div>
+          <div class="dashboard-metric">
+            <span class="dashboard-label">Còn hiệu lực</span>
+            <span class="dashboard-value" id="dash-active-vouchers" style="color:var(--green);">0</span>
+          </div>
+          <div class="dashboard-metric">
+            <span class="dashboard-label">Đã sử dụng</span>
+            <span class="dashboard-value" id="dash-used-vouchers" style="color:var(--text3);">0</span>
+          </div>
+        </div>
+
+        <div class="dashboard-card">
+          <div class="dashboard-title">📊 Hoạt động gần đây</div>
+          <div class="dashboard-metric">
+            <span class="dashboard-label">Đăng nhập hôm nay</span>
+            <span class="dashboard-value" id="dash-today-logins">0</span>
+          </div>
+          <div class="dashboard-metric">
+            <span class="dashboard-label">Voucher cấp hôm nay</span>
+            <span class="dashboard-value" id="dash-today-vouchers">0</span>
+          </div>
+          <div class="dashboard-subtitle">Cập nhật real-time</div>
+        </div>
+      </div>
+
+      <div class="section-title" style="margin-top:2rem;">Người dùng gần đây <small>Đăng nhập lần cuối</small></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Trạng thái</th>
+              <th>Người dùng</th>
+              <th>Email</th>
+              <th>Số voucher</th>
+              <th>Lần đăng nhập cuối</th>
+              <th>Tổng lần đăng nhập</th>
+            </tr>
+          </thead>
+          <tbody id="dashboard-users-tbody">
+            <tr class="erow"><td colspan="6"><div class="loading"><div class="spin"></div>Đang tải...</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
         <!-- User: voucher của tôi -->
     <div class="page" id="page-myvouch">
       <div class="my-vouchers-hero">
@@ -298,6 +385,8 @@ var currentUser = null;
 var isOwner     = false;
 var allVouchers = [];
 var userUnsub   = null;
+var onlineUsers = new Set();
+var heartbeatInterval = null;
 
 /* ─── AUTH ─── */
 document.getElementById("btn-login").addEventListener("click", function() {
@@ -320,9 +409,17 @@ auth.onAuthStateChanged(function(user) {
     isOwner = (user.email === OWNER_EMAIL);
     renderApp(user);
     trackUserLogin(user);
-    if (isOwner) { listenOwner(); listenUsers(); }
+    startHeartbeat(user.email);
+    if (isOwner) { listenOwner(); listenUsers(); listenOnlineStatus(); }
     else         listenUser(user);
   } else {
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+      heartbeatInterval = null;
+    }
+    if (currentUser && onlineUsers.has(currentUser.email)) {
+      setUserOffline(currentUser.email);
+    }
     currentUser = null;
     document.getElementById("login-screen").style.display = "flex";
     document.getElementById("app").style.display = "none";
@@ -365,7 +462,7 @@ document.querySelectorAll(".tab[data-tab]").forEach(function(btn) {
     document.querySelectorAll(".tab").forEach(function(t) { t.classList.remove("active"); });
     btn.classList.add("active");
     var t = btn.getAttribute("data-tab");
-    showPage(t === "vouchers" ? "page-vouchers" : t === "used" ? "page-used" : "page-users");
+    showPage(t === "vouchers" ? "page-vouchers" : t === "used" ? "page-used" : t === "dashboard" ? "page-dashboard" : "page-users");
   });
 });
 
@@ -439,6 +536,11 @@ function renderOwner() {
       return '<tr><td style="color:var(--text3);font-size:0.78rem;font-family:\'DM Mono\',monospace">'+(i+1)+'</td><td class="ec">'+v.userEmail+'</td><td><span class="upill">'+v.percent+'%</span></td><td style="color:var(--text3);font-size:0.8rem;font-family:\'DM Mono\',monospace">'+date+'</td></tr>';
     }).join("");
   }
+
+  // Update dashboard when voucher data changes
+  if (isOwner) {
+    updateDashboardStats();
+  }
 }
 
 function sc(label, val, style) {
@@ -456,12 +558,70 @@ function trackUserLogin(user) {
         displayName: user.displayName || "",
         photoURL: user.photoURL || "",
         lastLogin: Date.now(),
-        loginCount: cur + 1
+        loginCount: cur + 1,
+        isOnline: true,
+        lastSeen: Date.now()
       }, { merge: true });
     });
   }).catch(function(e) {
     console.warn("trackUserLogin thất bại — kiểm tra Firestore Rules:", e.message);
   });
+}
+
+/* ─── HEARTBEAT & ONLINE STATUS ─── */
+function startHeartbeat(email) {
+  setUserOnline(email);
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
+  heartbeatInterval = setInterval(function() {
+    setUserOnline(email);
+  }, 30000); // Update every 30 seconds
+}
+
+function setUserOnline(email) {
+  onlineUsers.add(email);
+  var ref = db.collection("users").doc(email);
+  ref.update({
+    isOnline: true,
+    lastSeen: Date.now()
+  }).catch(function(e) {
+    // Silent fail for race conditions
+  });
+}
+
+function setUserOffline(email) {
+  onlineUsers.delete(email);
+  var ref = db.collection("users").doc(email);
+  ref.update({
+    isOnline: false,
+    lastSeen: Date.now()
+  }).catch(function(e) {
+    // Silent fail for race conditions
+  });
+}
+
+function listenOnlineStatus() {
+  // Listen for online status changes
+  db.collection("users").where("isOnline", "==", true).onSnapshot(function(snap) {
+    onlineUsers.clear();
+    snap.forEach(function(doc) {
+      onlineUsers.add(doc.id);
+    });
+    if (isOwner) {
+      updateDashboardStats();
+      updateDashboardUsersTable();
+    }
+  });
+
+  // Clean up offline users (no heartbeat for 2 minutes)
+  setInterval(function() {
+    var twoMinutesAgo = Date.now() - 120000;
+    db.collection("users").where("lastSeen", "<", twoMinutesAgo).where("isOnline", "==", true).get()
+      .then(function(querySnapshot) {
+        querySnapshot.forEach(function(doc) {
+          setUserOffline(doc.id);
+        });
+      });
+  }, 60000); // Check every minute
 }
 
 /* ─── USERS LISTEN (owner only) ─── */
@@ -480,11 +640,17 @@ function listenUsers() {
         photoURL: data.photoURL || "",
         lastLogin: data.lastLogin || null,
         loginCount: data.loginCount || 0,
-        voucherCount: vcount
+        voucherCount: vcount,
+        isOnline: data.isOnline || false,
+        lastSeen: data.lastSeen || null
       });
     });
     allUsers.sort(function(a,b) { return (b.lastLogin||0)-(a.lastLogin||0); });
     renderUsers();
+    if (isOwner) {
+      updateDashboardStats();
+      updateDashboardUsersTable();
+    }
   }, function(err) {
     console.error("listenUsers lỗi — kiểm tra Firestore Rules:", err);
   });
@@ -515,12 +681,16 @@ function renderUsers(filter) {
     var badgeCls = isO ? "uc-badge uc-owner" : "uc-badge uc-user";
     var badgeTxt = isO ? "OWNER" : "USER";
     var vcount = u.voucherCount ? u.voucherCount + " voucher" : "0 voucher";
+    var isOnline = u.isOnline || false;
+    var onlineIndicator = isOnline ? '<div class="online-indicator"></div>' : '<div class="offline-indicator"></div>';
+    var onlineStatus = isOnline ? '<span class="online-dot"></span>Online' : '<span class="offline-dot"></span>Offline';
+    
     return '<div class="user-card">'
-      + '<div class="uc-avatar">'+avatarHtml+'</div>'
+      + '<div class="uc-avatar">'+avatarHtml+onlineIndicator+'</div>'
       + '<div class="uc-info">'
       +   '<div class="uc-name">'+(u.displayName||"—")+'</div>'
       +   '<div class="uc-email">'+u.email+'</div>'
-      +   '<div class="uc-last">🕐 '+lastStr+'</div>'
+      +   '<div class="uc-last">'+onlineStatus+' · 🕐 '+lastStr+'</div>'
       +   '<div class="uc-last" style="margin-top:3px">🔑 '+logins+' &nbsp;·&nbsp; 🎟 '+vcount+'</div>'
       + '</div>'
       + '<span class="'+badgeCls+'">'+badgeTxt+'</span>'
@@ -532,6 +702,81 @@ function renderUsers(filter) {
 document.getElementById("users-search").addEventListener("input", function() {
   renderUsers(this.value);
 });
+
+/* ─── DASHBOARD FUNCTIONS ─── */
+function updateDashboardStats() {
+  if (!isOwner) return;
+  
+  var totalUsers = allUsers.length;
+  var onlineCount = allUsers.filter(function(u) { return u.isOnline; }).length;
+  var offlineCount = totalUsers - onlineCount;
+  
+  var totalVouchers = allVouchers.length;
+  var usedVouchers = allVouchers.filter(function(v) { return v.used; }).length;
+  var activeVouchers = totalVouchers - usedVouchers;
+  
+  var today = new Date();
+  today.setHours(0, 0, 0, 0);
+  var todayTimestamp = today.getTime();
+  
+  var todayLogins = allUsers.filter(function(u) { 
+    return u.lastLogin && u.lastLogin >= todayTimestamp; 
+  }).length;
+  
+  var todayVouchers = allVouchers.filter(function(v) { 
+    return v.addedAt && v.addedAt >= todayTimestamp; 
+  }).length;
+  
+  // Update dashboard stats
+  document.getElementById("dash-total-users").textContent = totalUsers;
+  document.getElementById("dash-online-users").textContent = onlineCount;
+  document.getElementById("dash-offline-users").textContent = offlineCount;
+  document.getElementById("dash-total-vouchers").textContent = totalVouchers;
+  document.getElementById("dash-active-vouchers").textContent = activeVouchers;
+  document.getElementById("dash-used-vouchers").textContent = usedVouchers;
+  document.getElementById("dash-today-logins").textContent = todayLogins;
+  document.getElementById("dash-today-vouchers").textContent = todayVouchers;
+}
+
+function updateDashboardUsersTable() {
+  if (!isOwner) return;
+  
+  var tbody = document.getElementById("dashboard-users-tbody");
+  if (!allUsers.length) {
+    tbody.innerHTML = '<tr class="erow"><td colspan="6">Chưa có người dùng nào.</td></tr>';
+    return;
+  }
+  
+  var sortedUsers = allUsers.slice().sort(function(a,b) { 
+    return (b.lastLogin||0) - (a.lastLogin||0); 
+  }).slice(0, 10); // Show only 10 most recent
+  
+  tbody.innerHTML = sortedUsers.map(function(u, i) {
+    var isOnline = u.isOnline || false;
+    var statusDot = isOnline ? 
+      '<span class="online-dot"></span>Online' : 
+      '<span class="offline-dot"></span>Offline';
+    var statusColor = isOnline ? 'color:var(--green)' : 'color:var(--text3)';
+    
+    var initials = (u.displayName||u.email||"?")[0].toUpperCase();
+    var avatarHtml = u.photoURL
+      ? '<img src="'+u.photoURL+'" style="width:24px;height:24px;border-radius:50%;object-fit:cover;">'
+      : '<span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:var(--surface2);text-align:center;line-height:24px;font-size:0.7rem;font-weight:600;color:var(--text2);">'+initials+'</span>';
+    
+    var lastLoginStr = u.lastLogin ? new Date(u.lastLogin).toLocaleString("vi-VN") : "—";
+    var loginCount = u.loginCount || 1;
+    var voucherCount = u.voucherCount || 0;
+    
+    return '<tr>' +
+      '<td style="'+statusColor+';font-family:\'DM Mono\',monospace;font-size:0.75rem;">' + statusDot + '</td>' +
+      '<td>' + avatarHtml + ' <span style="margin-left:8px;font-family:\'Syne\',sans-serif;font-weight:600;">' + (u.displayName||"—") + '</span></td>' +
+      '<td class="ec">' + u.email + '</td>' +
+      '<td><span class="' + (voucherCount > 0 ? 'ppill' : 'upill') + '">' + voucherCount + '</span></td>' +
+      '<td style="color:var(--text3);font-size:0.8rem;font-family:\'DM Mono\',monospace">' + lastLoginStr + '</td>' +
+      '<td style="color:var(--text2);font-family:\'DM Mono\',monospace;font-size:0.75rem">' + loginCount + ' lần</td>' +
+      '</tr>';
+  }).join("");
+}
 
 /* ─── USER LISTEN ─── */
 function listenUser(user) {
