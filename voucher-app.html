@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VoucherVault</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0d0d10;
+    --surface: #16161c;
+    --surface2: #1e1e26;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --gold: #f0c060;
+    --gold-dim: rgba(240,192,96,0.15);
+    --gold-border: rgba(240,192,96,0.3);
+    --green: #4ade80;
+    --green-dim: rgba(74,222,128,0.12);
+    --red: #f87171;
+    --red-dim: rgba(248,113,113,0.12);
+    --blue: #60a5fa;
+    --blue-dim: rgba(96,165,250,0.12);
+    --text: #f0ede6;
+    --text2: #9896a0;
+    --text3: #5e5c68;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* ── LOGIN ── */
+  #login-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 2rem;
+    background: radial-gradient(ellipse 60% 60% at 50% 40%, rgba(240,192,96,0.07) 0%, transparent 70%);
+  }
+  .brand {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.6rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--gold);
+    text-align: center;
+  }
+  .brand span { color: var(--text); }
+  .brand-sub {
+    font-size: 0.85rem;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.12em;
+    text-align: center;
+    margin-top: -1.4rem;
+    text-transform: uppercase;
+  }
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 2.5rem 2.8rem;
+    width: 380px;
+    max-width: 92vw;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+  .login-card h2 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.35rem;
+  }
+  .login-card p { color: var(--text2); font-size: 0.88rem; }
+  .btn-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 0.85rem 1.4rem;
+    color: var(--text);
+    font-size: 0.95rem;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.18s, border-color 0.18s, transform 0.1s;
+  }
+  .btn-google:hover { background: #252530; border-color: var(--border2); }
+  .btn-google:active { transform: scale(0.98); }
+  .btn-google svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+  /* ── APP ── */
+  #app { display: none; flex-direction: column; min-height: 100vh; }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.8rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .header-brand {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: var(--gold);
+    letter-spacing: -0.02em;
+  }
+  .header-brand span { color: var(--text); }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .role-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    padding: 3px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .role-owner { background: var(--gold-dim); color: var(--gold); border: 1px solid var(--gold-border); }
+  .role-user { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(96,165,250,0.3); }
+  .user-avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 2px solid var(--border2);
+    object-fit: cover;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface2);
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text2);
+    overflow: hidden;
+  }
+  .btn-logout {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text3);
+    font-size: 0.8rem;
+    border-radius: var(--radius-sm);
+    padding: 5px 12px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .btn-logout:hover { border-color: var(--red); color: var(--red); }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    padding: 1rem 1.8rem 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .tab {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 500;
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    cursor: pointer;
+    color: var(--text3);
+    border: none;
+    background: none;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s;
+  }
+  .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+  .tab:hover:not(.active) { color: var(--text2); }
+
+  /* ── MAIN ── */
+  main { flex: 1; padding: 1.8rem; max-width: 1100px; margin: 0 auto; width: 100%; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 1.2rem;
+    color: var(--text);
+  }
+  .section-title small {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text3);
+    font-weight: 400;
+    margin-left: 8px;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── MY VOUCHERS (user view) ── */
+  .my-vouchers-hero {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 2rem 2.2rem;
+    margin-bottom: 1.5rem;
+  }
+  .my-vouchers-hero .user-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+  }
+  .my-vouchers-hero .user-email { color: var(--text3); font-size: 0.85rem; font-family: 'DM Mono', monospace; }
+  .voucher-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  .voucher-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.2rem 1.4rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.18s;
+  }
+  .voucher-card:hover { border-color: var(--border2); }
+  .voucher-card.used { opacity: 0.5; }
+  .voucher-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--gold);
+  }
+  .voucher-card.used::before { background: var(--text3); }
+  .voucher-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text3);
+    margin-bottom: 0.5rem;
+  }
+  .voucher-percent {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: var(--gold);
+    line-height: 1;
+  }
+  .voucher-card.used .voucher-percent { color: var(--text3); }
+  .voucher-label { font-size: 0.78rem; color: var(--text2); margin-top: 4px; }
+  .voucher-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 0.8rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .status-active { background: var(--green-dim); color: var(--green); }
+  .status-used { background: rgba(255,255,255,0.05); color: var(--text3); }
+  .status-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+  /* ── OWNER TABLE ── */
+  .owner-table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 0.9rem 1.2rem;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: 0.85rem 1.2rem;
+    font-size: 0.88rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .email-cell { font-family: 'DM Mono', monospace; font-size: 0.78rem; color: var(--text2); }
+  .percent-pill {
+    display: inline-block;
+    background: var(--gold-dim);
+    color: var(--gold);
+    border: 1px solid var(--gold-border);
+    border-radius: 999px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    padding: 2px 9px;
+    font-weight: 500;
+  }
+  .used-pill {
+    display: inline-block;
+    background: rgba(255,255,255,0.05);
+    color: var(--text3);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 999px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    padding: 2px 9px;
+    text-decoration: line-through;
+  }
+  .idx-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text3);
+    background: var(--surface2);
+    border-radius: 4px;
+    padding: 1px 6px;
+  }
+  .empty-row td {
+    text-align: center;
+    color: var(--text3);
+    padding: 2.5rem;
+    font-size: 0.85rem;
+  }
+
+  /* ── COMMAND BOX ── */
+  .cmd-section {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-top: 2rem;
+  }
+  .cmd-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.9rem 1.2rem;
+    border-bottom: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .cmd-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); }
+  .cmd-log {
+    min-height: 80px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 0.8rem 1.2rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.8;
+  }
+  .cmd-log-line { color: var(--text2); }
+  .cmd-log-line.ok { color: var(--green); }
+  .cmd-log-line.err { color: var(--red); }
+  .cmd-log-line.info { color: var(--gold); }
+  .cmd-input-row {
+    display: flex;
+    align-items: center;
+    border-top: 1px solid var(--border);
+  }
+  .cmd-prompt {
+    padding: 0 1rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--gold);
+    white-space: nowrap;
+    user-select: none;
+  }
+  #cmd-input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.88rem;
+    padding: 0.9rem 0;
+    caret-color: var(--gold);
+  }
+  ::placeholder { color: var(--text3); }
+  .cmd-send {
+    background: var(--gold-dim);
+    border: none;
+    border-left: 1px solid var(--border);
+    color: var(--gold);
+    padding: 0 1.2rem;
+    height: 100%;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: background 0.15s;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+  }
+  .cmd-send:hover { background: rgba(240,192,96,0.22); }
+
+  /* ── HELP BLOCK ── */
+  .help-block {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1rem 1.3rem;
+    margin-top: 1.5rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.9;
+    color: var(--text3);
+  }
+  .help-block span { color: var(--gold); }
+
+  /* ── STATS ROW ── */
+  .stats-row { display: flex; gap: 1rem; margin-bottom: 1.8rem; flex-wrap: wrap; }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.4rem;
+    flex: 1;
+    min-width: 130px;
+  }
+  .stat-label { font-size: 0.72rem; color: var(--text3); font-family: 'DM Mono', monospace; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+  .stat-val { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--gold); }
+
+  /* ── LOADING ── */
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    color: var(--text3);
+    font-size: 0.85rem;
+    font-family: 'DM Mono', monospace;
+    gap: 10px;
+  }
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 0.75rem 1.4rem;
+    font-size: 0.88rem;
+    color: var(--text);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+    z-index: 999;
+    white-space: nowrap;
+    font-family: 'DM Mono', monospace;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── CONFIG WARNING ── */
+  #config-warning {
+    background: rgba(248,113,113,0.1);
+    border: 1px solid rgba(248,113,113,0.3);
+    border-radius: var(--radius);
+    padding: 1rem 1.4rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.82rem;
+    color: var(--red);
+    display: none;
+    font-family: 'DM Mono', monospace;
+    line-height: 1.7;
+  }
+
+  @media (max-width: 600px) {
+    header { padding: 0.9rem 1rem; }
+    main { padding: 1rem; }
+    .login-card { padding: 2rem 1.5rem; }
+    .stat-val { font-size: 1.4rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ██ LOGIN SCREEN ██ -->
+<div id="login-screen">
+  <div>
+    <div class="brand">Voucher<span>Vault</span></div>
+    <div class="brand-sub">Quản lý voucher · Phân quyền</div>
+  </div>
+  <div class="login-card">
+    <h2>Đăng nhập</h2>
+    <p>Sử dụng tài khoản Google để tiếp tục. Owner có toàn quyền quản lý voucher.</p>
+    <button class="btn-google" onclick="signInWithGoogle()">
+      <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.3 29.3 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.8 0 5.3 1 7.2 2.7l5.7-5.7C33.5 7.1 29 5 24 5 12.9 5 4 13.9 4 25s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 16.1 19 13 24 13c2.8 0 5.3 1 7.2 2.7l5.7-5.7C33.5 7.1 29 5 24 5 16.3 5 9.7 9.2 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c4.9 0 9.3-1.9 12.7-4.9l-5.9-5c-1.7 1.2-3.9 2-6.8 2-5.2 0-9.6-3.5-11.2-8.3l-6.6 5.1C9.5 40.6 16.2 45 24 45z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.4l5.9 5c-.4.4 6.9-5 6.9-13.4 0-1.3-.1-2.6-.4-3.9z"/></svg>
+      Đăng nhập bằng Google
+    </button>
+    <p id="login-error" style="color:#f87171;font-size:0.82rem;display:none;"></p>
+  </div>
+</div>
+
+<!-- ██ APP ██ -->
+<div id="app">
+  <header>
+    <div class="header-brand">Voucher<span>Vault</span></div>
+    <div class="header-right">
+      <span class="role-badge" id="role-badge">...</span>
+      <div class="user-avatar" id="user-avatar"></div>
+      <button class="btn-logout" onclick="signOut()">Đăng xuất</button>
+    </div>
+  </header>
+
+  <!-- Owner tabs -->
+  <div class="tabs" id="owner-tabs" style="display:none;">
+    <button class="tab active" onclick="switchTab('vouchers')">Danh sách voucher</button>
+    <button class="tab" onclick="switchTab('used')">Đã sử dụng</button>
+  </div>
+
+  <main>
+    <div id="config-warning">
+      ⚠️ FIREBASE CHƯA ĐƯỢC CẤU HÌNH<br>
+      Mở file này và thay thế phần <code>firebaseConfig</code> bằng thông tin project của bạn từ Firebase Console.<br>
+      Hướng dẫn: Firebase Console → Project Settings → Your apps → SDK setup and configuration
+    </div>
+
+    <!-- ── Owner: Voucher List ── -->
+    <div class="page active" id="page-vouchers">
+      <div class="stats-row" id="stats-row"></div>
+      <div class="section-title">Tất cả voucher <small id="all-count"></small></div>
+      <div class="owner-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Email người dùng</th>
+              <th>% giảm</th>
+              <th>Trạng thái</th>
+              <th>Ngày cấp</th>
+            </tr>
+          </thead>
+          <tbody id="voucher-tbody">
+            <tr class="empty-row"><td colspan="5"><div class="loading"><div class="spinner"></div>Đang tải...</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Command Box -->
+      <div class="cmd-section" id="cmd-section">
+        <div class="cmd-header"><div class="cmd-dot"></div>Owner Terminal</div>
+        <div class="cmd-log" id="cmd-log">
+          <div class="cmd-log-line info">VoucherVault Owner Terminal — gõ lệnh bên dưới</div>
+        </div>
+        <div class="cmd-input-row">
+          <div class="cmd-prompt">$</div>
+          <input type="text" id="cmd-input" placeholder="/give user@email.com voucher 20  hoặc  /remove user@email.com voucher 1" />
+          <button class="cmd-send" onclick="handleCommand()">ENTER</button>
+        </div>
+      </div>
+
+      <div class="help-block">
+        <span>/give</span> &lt;email&gt; voucher &lt;%&gt;&nbsp;&nbsp;→ Cấp voucher giảm giá % cho người dùng<br>
+        <span>/remove</span> &lt;email&gt; voucher &lt;STT&gt;&nbsp;&nbsp;→ Xóa voucher theo số thứ tự (#) trong bảng<br>
+        <span>Ví dụ:</span> /give user@gmail.com voucher 15<br>
+        <span>Ví dụ:</span> /remove user@gmail.com voucher 2
+      </div>
+    </div>
+
+    <!-- ── Owner: Used Vouchers ── -->
+    <div class="page" id="page-used">
+      <div class="section-title">Voucher đã sử dụng <small id="used-count"></small></div>
+      <div class="owner-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Email người dùng</th>
+              <th>% giảm</th>
+              <th>Ngày sử dụng</th>
+            </tr>
+          </thead>
+          <tbody id="used-tbody">
+            <tr class="empty-row"><td colspan="4"><div class="loading"><div class="spinner"></div>Đang tải...</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── User: My Vouchers ── -->
+    <div class="page" id="page-myvouch">
+      <div class="my-vouchers-hero">
+        <div class="user-name" id="my-name">—</div>
+        <div class="user-email" id="my-email">—</div>
+        <div class="voucher-grid" id="my-voucher-grid">
+          <div class="loading"><div class="spinner"></div>Đang tải...</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut as fbSignOut
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import {
+    getFirestore, doc, setDoc, getDoc, updateDoc, collection, getDocs, onSnapshot
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  /* ─────────────────────────────────────────────────────────────
+   *  ⚠️  THAY PHẦN NÀY BẰNG CẤU HÌNH FIREBASE CỦA BẠN
+   *  Firebase Console → Project Settings → Your apps → Add app (Web)
+   * ───────────────────────────────────────────────────────────── */
+  const firebaseConfig = {
+    apiKey: "AIzaSyD2IlOEbV4YXgScCs5MAbMzrpvJ6Whmo_A",
+    authDomain: "tubanfun.firebaseapp.com",
+    projectId: "tubanfun",
+    storageBucket: "tubanfun.firebasestorage.app",
+    messagingSenderId: "406778210795",
+    appId: "1:406778210795:web:169e7e1d683adaf5b251ae",
+    measurementId: "G-T9878SFPZY"
+  };
+  /* ─────────────────────────────────────────────────────────────── */
+
+  const OWNER_EMAIL = "vvt158214@gmail.com";
+
+  // Check config
+  if (firebaseConfig.apiKey === "AIzaSyD2IlOEbV4YXgScCs5MAbMzrpvJ6Whmo_A") {
+    document.getElementById("config-warning").style.display = "block";
+  }
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let currentUser = null;
+  let isOwner = false;
+  let allVouchersData = []; // flat list for owner table
+
+  // ── AUTH ──
+  window.signInWithGoogle = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (e) {
+      const el = document.getElementById("login-error");
+      el.textContent = "Đăng nhập thất bại: " + e.message;
+      el.style.display = "block";
+    }
+  };
+
+  window.signOut = async () => {
+    await fbSignOut(auth);
+  };
+
+  onAuthStateChanged(auth, async user => {
+    if (user) {
+      currentUser = user;
+      isOwner = user.email === OWNER_EMAIL;
+      showApp(user);
+      if (isOwner) {
+        loadOwnerData();
+        listenOwnerData();
+      } else {
+        loadUserVouchers(user);
+      }
+    } else {
+      currentUser = null;
+      document.getElementById("login-screen").style.display = "flex";
+      document.getElementById("app").style.display = "none";
+    }
+  });
+
+  function showApp(user) {
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app").style.display = "flex";
+    document.getElementById("app").style.flexDirection = "column";
+
+    const badge = document.getElementById("role-badge");
+    if (isOwner) {
+      badge.textContent = "OWNER";
+      badge.className = "role-badge role-owner";
+      document.getElementById("owner-tabs").style.display = "flex";
+      showPage("page-vouchers");
+    } else {
+      badge.textContent = "SHOPPING MAN";
+      badge.className = "role-badge role-user";
+      document.getElementById("owner-tabs").style.display = "none";
+      showPage("page-myvouch");
+      document.getElementById("my-name").textContent = user.displayName || "Người dùng";
+      document.getElementById("my-email").textContent = user.email;
+    }
+
+    const av = document.getElementById("user-avatar");
+    if (user.photoURL) {
+      av.innerHTML = `<img src="${user.photoURL}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`;
+    } else {
+      av.textContent = (user.displayName || user.email)[0].toUpperCase();
+    }
+  }
+
+  // ── OWNER DATA ──
+  function listenOwnerData() {
+    const vRef = collection(db, "vouchers");
+    onSnapshot(vRef, snap => {
+      allVouchersData = [];
+      snap.forEach(d => {
+        const data = d.data();
+        (data.items || []).forEach(item => {
+          allVouchersData.push({ ...item, userEmail: d.id });
+        });
+      });
+      renderOwnerTables();
+    });
+  }
+
+  async function loadOwnerData() { /* initial handled by onSnapshot */ }
+
+  function renderOwnerTables() {
+    // Stats
+    const total = allVouchersData.length;
+    const used = allVouchersData.filter(v => v.used).length;
+    const active = total - used;
+    const uniqueUsers = new Set(allVouchersData.map(v => v.userEmail)).size;
+    document.getElementById("stats-row").innerHTML = `
+      <div class="stat-card"><div class="stat-label">Tổng voucher</div><div class="stat-val">${total}</div></div>
+      <div class="stat-card"><div class="stat-label">Còn hiệu lực</div><div class="stat-val" style="color:var(--green)">${active}</div></div>
+      <div class="stat-card"><div class="stat-label">Đã dùng</div><div class="stat-val" style="color:var(--text3)">${used}</div></div>
+      <div class="stat-card"><div class="stat-label">Người dùng</div><div class="stat-val" style="color:var(--blue)">${uniqueUsers}</div></div>
+    `;
+    document.getElementById("all-count").textContent = `(${total} voucher)`;
+    document.getElementById("used-count").textContent = `(${used} voucher)`;
+
+    // Main table
+    const tbody = document.getElementById("voucher-tbody");
+    if (allVouchersData.length === 0) {
+      tbody.innerHTML = `<tr class="empty-row"><td colspan="5">Chưa có voucher nào.</td></tr>`;
+    } else {
+      // Group by email to assign per-user index
+      const byEmail = {};
+      allVouchersData.forEach(v => {
+        if (!byEmail[v.userEmail]) byEmail[v.userEmail] = [];
+        byEmail[v.userEmail].push(v);
+      });
+      // Sort each group by addedAt
+      Object.values(byEmail).forEach(arr => arr.sort((a,b)=>(a.addedAt||0)-(b.addedAt||0)));
+      // Build flat with user-index
+      let rows = "";
+      let globalIdx = 1;
+      allVouchersData
+        .slice()
+        .sort((a,b)=>(a.addedAt||0)-(b.addedAt||0))
+        .forEach(v => {
+          const userItems = byEmail[v.userEmail];
+          const userIdx = userItems.findIndex(x => x.id === v.id) + 1;
+          const date = v.addedAt ? new Date(v.addedAt).toLocaleDateString("vi-VN") : "—";
+          const pill = v.used
+            ? `<span class="used-pill">${v.percent}%</span>`
+            : `<span class="percent-pill">${v.percent}%</span>`;
+          const status = v.used
+            ? `<span class="voucher-status status-used"><span class="status-dot"></span>Đã dùng</span>`
+            : `<span class="voucher-status status-active"><span class="status-dot"></span>Còn hiệu lực</span>`;
+          rows += `<tr>
+            <td><span class="idx-num">#${userIdx}</span></td>
+            <td class="email-cell">${v.userEmail}</td>
+            <td>${pill}</td>
+            <td>${status}</td>
+            <td style="color:var(--text3);font-size:0.8rem;font-family:'DM Mono',monospace">${date}</td>
+          </tr>`;
+          globalIdx++;
+        });
+      tbody.innerHTML = rows;
+    }
+
+    // Used table
+    const usedItems = allVouchersData.filter(v => v.used).sort((a,b)=>(b.usedAt||0)-(a.usedAt||0));
+    const usedTbody = document.getElementById("used-tbody");
+    if (usedItems.length === 0) {
+      usedTbody.innerHTML = `<tr class="empty-row"><td colspan="4">Chưa có voucher nào được sử dụng.</td></tr>`;
+    } else {
+      usedTbody.innerHTML = usedItems.map((v,i) => {
+        const date = v.usedAt ? new Date(v.usedAt).toLocaleDateString("vi-VN") : "—";
+        return `<tr>
+          <td style="color:var(--text3);font-size:0.78rem;font-family:'DM Mono',monospace">${i+1}</td>
+          <td class="email-cell">${v.userEmail}</td>
+          <td><span class="used-pill">${v.percent}%</span></td>
+          <td style="color:var(--text3);font-size:0.8rem;font-family:'DM Mono',monospace">${date}</td>
+        </tr>`;
+      }).join("");
+    }
+  }
+
+  // ── USER VOUCHERS ──
+  async function loadUserVouchers(user) {
+    const vRef = doc(db, "vouchers", user.email);
+    const snap = await getDoc(vRef);
+    const items = snap.exists() ? (snap.data().items || []) : [];
+    renderUserVouchers(items);
+
+    // listen realtime
+    onSnapshot(vRef, s => {
+      const its = s.exists() ? (s.data().items || []) : [];
+      renderUserVouchers(its);
+    });
+  }
+
+  function renderUserVouchers(items) {
+    const grid = document.getElementById("my-voucher-grid");
+    if (items.length === 0) {
+      grid.innerHTML = `<div style="color:var(--text3);font-size:0.85rem;font-family:'DM Mono',monospace;grid-column:1/-1;padding:1rem 0">Bạn chưa có voucher nào.</div>`;
+      return;
+    }
+    grid.innerHTML = items.map((v, i) => `
+      <div class="voucher-card${v.used ? ' used' : ''}">
+        <div class="voucher-num">#${i+1}</div>
+        <div class="voucher-percent">${v.percent}%</div>
+        <div class="voucher-label">Giảm giá</div>
+        <div class="voucher-status ${v.used ? 'status-used' : 'status-active'}">
+          <span class="status-dot"></span>${v.used ? 'Đã sử dụng' : 'Còn hiệu lực'}
+        </div>
+      </div>
+    `).join("");
+  }
+
+  // ── COMMANDS ──
+  window.handleCommand = async () => {
+    const input = document.getElementById("cmd-input");
+    const raw = input.value.trim();
+    if (!raw) return;
+    input.value = "";
+    log("> " + raw, "info");
+
+    const giveMatch = raw.match(/^\/give\s+(\S+)\s+voucher\s+(\d+(?:\.\d+)?)\s*$/i);
+    const removeMatch = raw.match(/^\/remove\s+(\S+)\s+voucher\s+(\d+)\s*$/i);
+
+    if (giveMatch) {
+      const [, email, percent] = giveMatch;
+      await giveVoucher(email, parseFloat(percent));
+    } else if (removeMatch) {
+      const [, email, idx] = removeMatch;
+      await removeVoucher(email, parseInt(idx));
+    } else {
+      log("❌ Lệnh không hợp lệ. Dùng: /give <email> voucher <số%>  hoặc  /remove <email> voucher <STT>", "err");
+    }
+  };
+
+  document.getElementById("cmd-input")?.addEventListener("keydown", e => {
+    if (e.key === "Enter") window.handleCommand();
+  });
+
+  async function giveVoucher(email, percent) {
+    if (percent <= 0 || percent > 100) { log("❌ Phần trăm phải từ 1 đến 100", "err"); return; }
+    try {
+      const ref = doc(db, "vouchers", email);
+      const snap = await getDoc(ref);
+      const items = snap.exists() ? (snap.data().items || []) : [];
+      const newItem = {
+        id: Date.now().toString(),
+        percent,
+        used: false,
+        usedAt: null,
+        addedAt: Date.now()
+      };
+      items.push(newItem);
+      await setDoc(ref, { email, items }, { merge: true });
+      log(`✓ Đã cấp voucher ${percent}% cho ${email} (STT #${items.length})`, "ok");
+      showToast(`Đã cấp voucher ${percent}% cho ${email}`);
+    } catch (e) {
+      log("❌ Lỗi: " + e.message, "err");
+    }
+  }
+
+  async function removeVoucher(email, idx) {
+    try {
+      const ref = doc(db, "vouchers", email);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) { log(`❌ Không tìm thấy người dùng: ${email}`, "err"); return; }
+      const items = snap.data().items || [];
+      if (idx < 1 || idx > items.length) {
+        log(`❌ Số thứ tự #${idx} không tồn tại. Người dùng này có ${items.length} voucher.`, "err");
+        return;
+      }
+      const removed = items[idx - 1];
+      items.splice(idx - 1, 1);
+      await updateDoc(ref, { items });
+      log(`✓ Đã xóa voucher #${idx} (${removed.percent}%) của ${email}`, "ok");
+      showToast(`Đã xóa voucher #${idx} của ${email}`);
+    } catch (e) {
+      log("❌ Lỗi: " + e.message, "err");
+    }
+  }
+
+  function log(msg, cls = "") {
+    const el = document.getElementById("cmd-log");
+    const line = document.createElement("div");
+    line.className = "cmd-log-line" + (cls ? " " + cls : "");
+    line.textContent = msg;
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  // ── TABS ──
+  window.switchTab = (tab) => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    event.target.classList.add("active");
+    if (tab === "vouchers") {
+      showPage("page-vouchers");
+    } else if (tab === "used") {
+      showPage("page-used");
+    }
+  };
+
+  function showPage(id) {
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    document.getElementById(id)?.classList.add("active");
+  }
+
+  // ── TOAST ──
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 3000);
+  }
+  window.showToast = showToast;
+</script>
+</body>
+</html>
