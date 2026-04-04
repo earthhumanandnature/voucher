@@ -584,7 +584,7 @@
         </div>
         <div class="cmd-input-row">
           <div class="cmd-prompt">$</div>
-          <input type="text" id="cmd-input" placeholder="/give user@email.com voucher 20  hoặc  /remove user@email.com voucher 1" />
+          <input type="text" id="cmd-input" placeholder="/give user@gmail.com voucher 20  |  /remove user@gmail.com voucher 1  |  /used user@gmail.com voucher 1" />
           <button class="cmd-send" onclick="handleCommand()">ENTER</button>
         </div>
       </div>
@@ -592,8 +592,8 @@
       <div class="help-block">
         <span>/give</span> &lt;email&gt; voucher &lt;%&gt;&nbsp;&nbsp;→ Cấp voucher giảm giá % cho người dùng<br>
         <span>/remove</span> &lt;email&gt; voucher &lt;STT&gt;&nbsp;&nbsp;→ Xóa voucher theo số thứ tự (#) trong bảng<br>
-        <span>Ví dụ:</span> /give user@gmail.com voucher 15<br>
-        <span>Ví dụ:</span> /remove user@gmail.com voucher 2
+        <span>/used</span> &lt;email&gt; voucher &lt;STT&gt;&nbsp;&nbsp;→ Đánh dấu voucher là đã sử dụng<br>
+        <span>Ví dụ:</span> /give user@gmail.com voucher 15&nbsp;&nbsp;|&nbsp;&nbsp;/remove user@gmail.com voucher 2&nbsp;&nbsp;|&nbsp;&nbsp;/used user@gmail.com voucher 1
       </div>
     </div>
 
@@ -633,7 +633,7 @@
 <div id="toast"></div>
 
 <!-- Firebase SDK -->
-<script type="module">
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import {
     getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut as fbSignOut
@@ -646,14 +646,14 @@
    *  ⚠️  THAY PHẦN NÀY BẰNG CẤU HÌNH FIREBASE CỦA BẠN
    *  Firebase Console → Project Settings → Your apps → Add app (Web)
    * ───────────────────────────────────────────────────────────── */
-  const firebaseConfig = {
-    apiKey: "AIzaSyD2IlOEbV4YXgScCs5MAbMzrpvJ6Whmo_A",
-    authDomain: "tubanfun.firebaseapp.com",
-    projectId: "tubanfun",
-    storageBucket: "tubanfun.firebasestorage.app",
-    messagingSenderId: "406778210795",
-    appId: "1:406778210795:web:169e7e1d683adaf5b251ae",
-    measurementId: "G-T9878SFPZY"
+  const firebaseConfig = { 
+    apiKey : "AIzaSyD2IlOEbV4YXgScCs5MAbMzrpvJ6Whmo_A" , 
+    authDomain : "tubanfun.firebaseapp.com" , 
+    projectId : "tubanfun" , 
+    storageBucket : "tubanfun.firebasestorage.app" , 
+    messagingSenderId : "406778210795" , 
+    appId : "1:406778210795:web:169e7e1d683adaf5b251ae" , 
+    measurementId : "G-T9878SFPZY" 
   };
   /* ─────────────────────────────────────────────────────────────── */
 
@@ -867,6 +867,7 @@
 
     const giveMatch = raw.match(/^\/give\s+(\S+)\s+voucher\s+(\d+(?:\.\d+)?)\s*$/i);
     const removeMatch = raw.match(/^\/remove\s+(\S+)\s+voucher\s+(\d+)\s*$/i);
+    const usedMatch = raw.match(/^\/used\s+(\S+)\s+voucher\s+(\d+)\s*$/i);
 
     if (giveMatch) {
       const [, email, percent] = giveMatch;
@@ -874,8 +875,11 @@
     } else if (removeMatch) {
       const [, email, idx] = removeMatch;
       await removeVoucher(email, parseInt(idx));
+    } else if (usedMatch) {
+      const [, email, idx] = usedMatch;
+      await markUsed(email, parseInt(idx));
     } else {
-      log("❌ Lệnh không hợp lệ. Dùng: /give <email> voucher <số%>  hoặc  /remove <email> voucher <STT>", "err");
+      log("❌ Lệnh không hợp lệ. Xem hướng dẫn bên dưới.", "err");
     }
   };
 
@@ -925,6 +929,30 @@
     }
   }
 
+  async function markUsed(email, idx) {
+    try {
+      const ref = doc(db, "vouchers", email);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) { log(`❌ Không tìm thấy người dùng: ${email}`, "err"); return; }
+      const items = snap.data().items || [];
+      if (idx < 1 || idx > items.length) {
+        log(`❌ Số thứ tự #${idx} không tồn tại. Người dùng này có ${items.length} voucher.`, "err");
+        return;
+      }
+      if (items[idx - 1].used) {
+        log(`⚠️ Voucher #${idx} của ${email} đã được đánh dấu sử dụng trước đó.`, "err");
+        return;
+      }
+      items[idx - 1].used = true;
+      items[idx - 1].usedAt = Date.now();
+      await updateDoc(ref, { items });
+      log(`✓ Đã đánh dấu voucher #${idx} (${items[idx-1].percent}%) của ${email} là đã sử dụng`, "ok");
+      showToast(`Voucher #${idx} của ${email} đã được dùng`);
+    } catch (e) {
+      log("❌ Lỗi: " + e.message, "err");
+    }
+  }
+
   function log(msg, cls = "") {
     const el = document.getElementById("cmd-log");
     const line = document.createElement("div");
@@ -946,18 +974,4 @@
   };
 
   function showPage(id) {
-    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-    document.getElementById(id)?.classList.add("active");
-  }
-
-  // ── TOAST ──
-  function showToast(msg) {
-    const t = document.getElementById("toast");
-    t.textContent = msg;
-    t.classList.add("show");
-    setTimeout(() => t.classList.remove("show"), 3000);
-  }
-  window.showToast = showToast;
-</script>
-</body>
-</html>
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("activ
