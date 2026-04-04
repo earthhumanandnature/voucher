@@ -224,7 +224,7 @@
         <span>/give</span> &lt;email&gt; voucher &lt;%&gt; &nbsp;→ Cấp voucher giảm giá cho người dùng<br>
         <span>/remove</span> &lt;email&gt; voucher &lt;STT&gt; &nbsp;→ Xóa voucher theo số thứ tự #<br>
         <span>/used</span> &lt;email&gt; voucher &lt;STT&gt; &nbsp;→ Đánh dấu voucher là đã sử dụng<br>
-        <span>Ví dụ:</span> /give <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="f7969594b7909a969e9bd994989a">[email&#160;protected]</a> voucher 20 &nbsp;|&nbsp; /remove <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="4627242506212b272f2a6825292b">[email&#160;protected]</a> voucher 1 &nbsp;|&nbsp; /used <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6706050427000a060e0b4904080a">[email&#160;protected]</a> voucher 1
+        <span>Ví dụ:</span> /give user@example.com voucher 20 &nbsp;|&nbsp; /remove user@example.com voucher 1 &nbsp;|&nbsp; /used user@example.com voucher 1
       </div>
     </div>
 
@@ -264,7 +264,7 @@
 <div id="toast"></div>
 
 <!-- Firebase Compat (không dùng module → hàm ở global scope bình thường) -->
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
@@ -478,7 +478,7 @@ function renderUsers(filter) {
 
   var grid = document.getElementById("users-grid");
   if (!list.length) {
-    grid.innerHTML = '<div style="color:var(--text3);font-size:0.85rem;font-family:'DM Mono',monospace;grid-column:1/-1;padding:1.5rem 0">' + (query ? "Không tìm thấy kết quả." : "Chưa có người dùng nào.") + '</div>';
+    grid.innerHTML = '<div style="color:var(--text3);font-size:0.85rem;font-family:DM Mono,monospace;grid-column:1/-1;padding:1.5rem 0">' + (query ? "Không tìm thấy kết quả." : "Chưa có người dùng nào.") + '</div>';
     return;
   }
   grid.innerHTML = list.map(function(u) {
