@@ -224,7 +224,7 @@
         <span>/give</span> &lt;email&gt; voucher &lt;%&gt; &nbsp;→ Cấp voucher giảm giá cho người dùng<br>
         <span>/remove</span> &lt;email&gt; voucher &lt;STT&gt; &nbsp;→ Xóa voucher theo số thứ tự #<br>
         <span>/used</span> &lt;email&gt; voucher &lt;STT&gt; &nbsp;→ Đánh dấu voucher là đã sử dụng<br>
-        <span>Ví dụ:</span> /give user@example.com voucher 20 &nbsp;|&nbsp; /remove user@example.com voucher 1 &nbsp;|&nbsp; /used user@example.com voucher 1
+        <span>Ví dụ:</span> /give <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="126761776052776a737f627e773c717d7f">[email&#160;protected]</a> voucher 20 &nbsp;|&nbsp; /remove <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6f1a1c0a1d2f0a170e021f030a410c0002">[email&#160;protected]</a> voucher 1 &nbsp;|&nbsp; /used <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="4b3e382e390b2e332a263b272e65282426">[email&#160;protected]</a> voucher 1
       </div>
     </div>
 
@@ -264,7 +264,7 @@
 <div id="toast"></div>
 
 <!-- Firebase Compat (không dùng module → hàm ở global scope bình thường) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
@@ -447,21 +447,37 @@ function sc(label, val, style) {
 
 /* ─── TRACK LOGIN ─── */
 function trackUserLogin(user) {
-  db.collection("users").doc(user.email).set({
-    email: user.email,
-    displayName: user.displayName || "",
-    photoURL: user.photoURL || "",
-    lastLogin: Date.now(),
-    loginCount: firebase.firestore.FieldValue.increment(1)
-  }, { merge: true }).catch(function(e) { console.warn("trackUserLogin:", e); });
+  var ref = db.collection("vouchers").doc(user.email);
+  ref.get().then(function(snap) {
+    var cur = snap.exists ? (snap.data().loginCount || 0) : 0;
+    return ref.set({
+      email: user.email,
+      displayName: user.displayName || "",
+      photoURL: user.photoURL || "",
+      lastLogin: Date.now(),
+      loginCount: cur + 1
+    }, { merge: true });
+  }).catch(function(e) { console.warn("trackUserLogin:", e); });
 }
 
 /* ─── USERS LISTEN (owner only) ─── */
 var allUsers = [];
 function listenUsers() {
-  db.collection("users").onSnapshot(function(snap) {
+  db.collection("vouchers").onSnapshot(function(snap) {
     allUsers = [];
-    snap.forEach(function(d) { allUsers.push(d.data()); });
+    snap.forEach(function(d) {
+      var data = d.data();
+      if (data.email) {
+        allUsers.push({
+          email: data.email,
+          displayName: data.displayName || "",
+          photoURL: data.photoURL || "",
+          lastLogin: data.lastLogin || null,
+          loginCount: data.loginCount || 0,
+          voucherCount: (data.items || []).length
+        });
+      }
+    });
     allUsers.sort(function(a,b) { return (b.lastLogin||0)-(a.lastLogin||0); });
     renderUsers();
   });
@@ -491,12 +507,14 @@ function renderUsers(filter) {
     var logins = u.loginCount ? u.loginCount + " lần" : "1 lần";
     var badgeCls = isO ? "uc-badge uc-owner" : "uc-badge uc-user";
     var badgeTxt = isO ? "OWNER" : "USER";
+    var vcount = u.voucherCount ? u.voucherCount + " voucher" : "0 voucher";
     return '<div class="user-card">'
       + '<div class="uc-avatar">'+avatarHtml+'</div>'
       + '<div class="uc-info">'
       +   '<div class="uc-name">'+(u.displayName||"—")+'</div>'
       +   '<div class="uc-email">'+u.email+'</div>'
-      +   '<div class="uc-last">🕐 '+lastStr+' &nbsp;·&nbsp; '+logins+'</div>'
+      +   '<div class="uc-last">🕐 '+lastStr+'</div>'
+      +   '<div class="uc-last" style="margin-top:3px">🔑 '+logins+' &nbsp;·&nbsp; 🎟 '+vcount+'</div>'
       + '</div>'
       + '<span class="'+badgeCls+'">'+badgeTxt+'</span>'
       + '</div>';
@@ -617,11 +635,4 @@ function toast(msg) {
 <!-- DISCORD SUPPORT BUTTON -->
 <a id="discord-btn" href="http://discordapp.com/users/1179285160097742902" target="_blank" rel="noopener noreferrer">
   <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
-  </svg>
-  Hỗ trợ
-</a>
-
-<div id="toast"></div>
-</body>
-</html>
+    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0
