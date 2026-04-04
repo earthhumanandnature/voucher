@@ -447,7 +447,7 @@ function sc(label, val, style) {
 
 /* ─── TRACK LOGIN ─── */
 function trackUserLogin(user) {
-  var ref = db.collection("vouchers").doc(user.email);
+  var ref = db.collection("users").doc(user.email);
   ref.get().then(function(snap) {
     var cur = snap.exists ? (snap.data().loginCount || 0) : 0;
     return ref.set({
@@ -457,29 +457,32 @@ function trackUserLogin(user) {
       lastLogin: Date.now(),
       loginCount: cur + 1
     }, { merge: true });
-  }).catch(function(e) { console.warn("trackUserLogin:", e); });
+  }).catch(function(e) { console.warn("trackUserLogin lỗi (kiểm tra Firestore Rules):", e); });
 }
 
 /* ─── USERS LISTEN (owner only) ─── */
 var allUsers = [];
 function listenUsers() {
-  db.collection("vouchers").onSnapshot(function(snap) {
+  // Đọc users collection (cần Firestore rule: owner read-all, user write-own)
+  db.collection("users").onSnapshot(function(snap) {
     allUsers = [];
     snap.forEach(function(d) {
       var data = d.data();
-      if (data.email) {
-        allUsers.push({
-          email: data.email,
-          displayName: data.displayName || "",
-          photoURL: data.photoURL || "",
-          lastLogin: data.lastLogin || null,
-          loginCount: data.loginCount || 0,
-          voucherCount: (data.items || []).length
-        });
-      }
+      // Ghép số voucher từ allVouchers đã load sẵn
+      var vcount = allVouchers.filter(function(v) { return v.userEmail === data.email; }).length;
+      allUsers.push({
+        email: data.email,
+        displayName: data.displayName || "",
+        photoURL: data.photoURL || "",
+        lastLogin: data.lastLogin || null,
+        loginCount: data.loginCount || 0,
+        voucherCount: vcount
+      });
     });
     allUsers.sort(function(a,b) { return (b.lastLogin||0)-(a.lastLogin||0); });
     renderUsers();
+  }, function(err) {
+    console.error("listenUsers lỗi — kiểm tra Firestore Rules:", err);
   });
 }
 
