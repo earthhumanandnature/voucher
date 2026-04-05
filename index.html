@@ -924,6 +924,10 @@ function updateDashboardStats() {
   var onlineCount = allUsers.filter(function(u) { return u.isOnline; }).length;
   var offlineCount = totalUsers - onlineCount;
   
+  // Remove any hardcoded limits - show actual online count
+  document.getElementById("dash-online-users").textContent = onlineCount;
+  document.getElementById("dash-offline-users").textContent = offlineCount;
+  
   var totalVouchers = allVouchers.length;
   var usedVouchers = allVouchers.filter(function(v) { return v.used; }).length;
   var activeVouchers = totalVouchers - usedVouchers;
@@ -942,8 +946,6 @@ function updateDashboardStats() {
   
   // Update dashboard stats
   document.getElementById("dash-total-users").textContent = totalUsers;
-  document.getElementById("dash-online-users").textContent = onlineCount;
-  document.getElementById("dash-offline-users").textContent = offlineCount;
   document.getElementById("dash-total-vouchers").textContent = totalVouchers;
   document.getElementById("dash-active-vouchers").textContent = activeVouchers;
   document.getElementById("dash-used-vouchers").textContent = usedVouchers;
@@ -962,7 +964,7 @@ function updateDashboardUsersTable() {
   
   var sortedUsers = allUsers.slice().sort(function(a,b) { 
     return (b.lastLogin||0) - (a.lastLogin||0); 
-  }).slice(0, 10); // Show only 10 most recent
+  }).slice(0, 100); // Show up to 100 most recent users
   
   tbody.innerHTML = sortedUsers.map(function(u, i) {
     var isOnline = u.isOnline || false;
