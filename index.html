@@ -768,11 +768,14 @@ function setUserOffline(email) {
 }
 
 function listenOnlineStatus() {
-  // Listen for online status changes
-  db.collection("users").where("isOnline", "==", true).onSnapshot(function(snap) {
+  // Listen for online status changes - use simple query without compound index
+  db.collection("users").onSnapshot(function(snap) {
     onlineUsers.clear();
     snap.forEach(function(doc) {
-      onlineUsers.add(doc.id);
+      var data = doc.data();
+      if (data.isOnline) {
+        onlineUsers.add(doc.id);
+      }
     });
     if (isOwner) {
       updateDashboardStats();
@@ -780,13 +783,16 @@ function listenOnlineStatus() {
     }
   });
 
-  // Clean up offline users (no heartbeat for 2 minutes)
+  // Clean up offline users (no heartbeat for 2 minutes) - use get all and filter client-side
   setInterval(function() {
     var twoMinutesAgo = Date.now() - 120000;
-    db.collection("users").where("lastSeen", "<", twoMinutesAgo).where("isOnline", "==", true).get()
+    db.collection("users").get()
       .then(function(querySnapshot) {
         querySnapshot.forEach(function(doc) {
-          setUserOffline(doc.id);
+          var data = doc.data();
+          if (data.isOnline && data.lastSeen && data.lastSeen < twoMinutesAgo) {
+            setUserOffline(doc.id);
+          }
         });
       });
   }, 60000); // Check every minute
@@ -969,6 +975,7 @@ function renderUserVouchers(items) {
 /* ─── COMMANDS ─── */
 document.getElementById("cmd-send").addEventListener("click", runCmd);
 document.getElementById("cmd-input").addEventListener("keydown", function(e) { 
+  console.log("Key pressed:", e.key); // Debug
   if (e.key === "Enter") runCmd(); 
   if (e.key === "ArrowUp" || e.key === "ArrowDown") handleAutocompleteNav(e);
   if (e.key === "Escape") hideAutocomplete();
@@ -976,6 +983,7 @@ document.getElementById("cmd-input").addEventListener("keydown", function(e) {
 });
 
 document.getElementById("cmd-input").addEventListener("input", function(e) {
+  console.log("Input changed:", this.value); // Debug
   var value = this.value.trim();
   if (value.length > 0) {
     showAutocomplete();
@@ -1029,6 +1037,8 @@ function showAutocomplete() {
   var input = document.getElementById("cmd-input").value.trim();
   var autocomplete = document.getElementById("cmd-autocomplete");
   
+  console.log("showAutocomplete called with input:", input); // Debug
+  
   if (input.length === 0) {
     // Show all commands
     filteredCommands = commandDefinitions.slice();
@@ -1038,6 +1048,8 @@ function showAutocomplete() {
       return cmd.cmd.toLowerCase().includes(input.toLowerCase());
     });
   }
+  
+  console.log("Filtered commands:", filteredCommands); // Debug
   
   if (filteredCommands.length === 0) {
     hideAutocomplete();
@@ -1062,6 +1074,7 @@ function showAutocomplete() {
   
   autocomplete.classList.add("show");
   currentAutocompleteIndex = -1;
+  console.log("Autocomplete shown"); // Debug
 }
 
 function hideAutocomplete() {
@@ -1111,8 +1124,13 @@ function logCommand(command) {
   logEntry.innerHTML = '<span class="timestamp">[' + timestamp + ']</span> $ ' + command;
   
   var cmdLog = document.getElementById("cmd-log");
-  cmdLog.appendChild(logEntry);
-  cmdLog.scrollTop = cmdLog.scrollHeight;
+  if (cmdLog) {
+    cmdLog.appendChild(logEntry);
+    cmdLog.scrollTop = cmdLog.scrollHeight;
+    console.log("Command logged:", command); // Debug
+  } else {
+    console.error("cmd-log element not found!"); // Debug
+  }
 }
 
 function cmdGive(email, pct) {
