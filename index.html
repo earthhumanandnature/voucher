@@ -110,9 +110,11 @@
     position:absolute;bottom:100%;left:0;right:0;
     background:var(--surface);border:1px solid var(--border2);
     border-radius:8px;margin-bottom:4px;max-height:200px;overflow-y:auto;
-    display:none;z-index:1002;box-shadow:0 4px 20px rgba(0,0,0,0.3);
+    display:none;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);
   }
-  .cmd-autocomplete.show{display:block;}
+  .cmd-autocomplete.show{
+    display:block !important;
+  }
   .cmd-suggestion{
     padding:0.6rem 1rem;display:flex;align-items:center;gap:8px;
     cursor:pointer;transition:background 0.15s;border-bottom:1px solid var(--border);
@@ -973,6 +975,39 @@ function renderUserVouchers(items) {
 }
 
 /* ─── COMMANDS ─── */
+// Test function to check autocomplete
+function testAutocomplete() {
+  console.log("=== Testing Autocomplete ===");
+  var autocomplete = document.getElementById("cmd-autocomplete");
+  var cmdInput = document.getElementById("cmd-input");
+  var cmdLog = document.getElementById("cmd-log");
+  
+  console.log("Elements found:", {
+    autocomplete: !!autocomplete,
+    cmdInput: !!cmdInput,
+    cmdLog: !!cmdLog
+  });
+  
+  if (autocomplete) {
+    console.log("Autocomplete styles:", {
+      display: window.getComputedStyle(autocomplete).display,
+      visibility: window.getComputedStyle(autocomplete).visibility,
+      zIndex: window.getComputedStyle(autocomplete).zIndex,
+      position: window.getComputedStyle(autocomplete).position
+    });
+  }
+  
+  // Test adding content
+  if (autocomplete) {
+    autocomplete.innerHTML = '<div class="cmd-suggestion">TEST</div>';
+    autocomplete.classList.add("show");
+    console.log("Test content added, show class added");
+  }
+}
+
+// Run test after DOM is ready
+setTimeout(testAutocomplete, 2000);
+
 document.getElementById("cmd-send").addEventListener("click", runCmd);
 document.getElementById("cmd-input").addEventListener("keydown", function(e) { 
   console.log("Key pressed:", e.key); // Debug
@@ -1034,18 +1069,26 @@ function handleAutocompleteNav(e) {
 }
 
 function showAutocomplete() {
-  var input = document.getElementById("cmd-input").value.trim();
+  var input = document.getElementById("cmd-input");
   var autocomplete = document.getElementById("cmd-autocomplete");
   
-  console.log("showAutocomplete called with input:", input); // Debug
+  console.log("showAutocomplete called with input:", input?.value); // Debug
+  console.log("Autocomplete element:", autocomplete); // Debug
   
-  if (input.length === 0) {
+  if (!input || !autocomplete) {
+    console.error("Missing elements:", { input: !!input, autocomplete: !!autocomplete });
+    return;
+  }
+  
+  var inputValue = input.value.trim();
+  
+  if (inputValue.length === 0) {
     // Show all commands
     filteredCommands = commandDefinitions.slice();
   } else {
     // Filter commands based on input
     filteredCommands = commandDefinitions.filter(function(cmd) {
-      return cmd.cmd.toLowerCase().includes(input.toLowerCase());
+      return cmd.cmd.toLowerCase().includes(inputValue.toLowerCase());
     });
   }
   
@@ -1074,7 +1117,7 @@ function showAutocomplete() {
   
   autocomplete.classList.add("show");
   currentAutocompleteIndex = -1;
-  console.log("Autocomplete shown"); // Debug
+  console.log("Autocomplete shown, classes:", autocomplete.className); // Debug
 }
 
 function hideAutocomplete() {
