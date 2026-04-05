@@ -415,7 +415,7 @@
 <div id="toast"></div>
 
 <!-- Firebase Compat (không dùng module → hàm ở global scope bình thường) -->
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
@@ -952,49 +952,6 @@ var youtubePlayer = null;
 var currentVideoId = null;
 var isMinimized = false;
 
-document.getElementById("youtube-btn").addEventListener("click", function() {
-  var mini = document.getElementById("youtube-mini");
-  mini.classList.toggle("show");
-  if (mini.classList.contains("show")) {
-    document.getElementById("youtube-search").focus();
-  }
-});
-
-document.getElementById("youtube-close").addEventListener("click", function() {
-  document.getElementById("youtube-mini").classList.remove("show");
-  stopVideo();
-});
-
-document.getElementById("youtube-minimize").addEventListener("click", function() {
-  var mini = document.getElementById("youtube-mini");
-  isMinimized = !isMinimized;
-  if (isMinimized) {
-    mini.classList.add("minimized");
-    document.getElementById("youtube-minimize").textContent="□";
-  } else {
-    mini.classList.remove("minimized");
-    document.getElementById("youtube-minimize").textContent="━";
-  }
-});
-
-document.getElementById("youtube-search").addEventListener("keydown", function(e) {
-  if (e.key === "Enter") {
-    var query = this.value.trim();
-    if (query) {
-      if (isYouTubeUrl(query)) {
-        var videoId = extractVideoId(query);
-        if (videoId) {
-          loadVideo(videoId);
-        } else {
-          toast("❌ Link YouTube không hợp lệ");
-        }
-      } else {
-        searchYouTube(query);
-      }
-    }
-  }
-});
-
 function isYouTubeUrl(url) {
   return url.includes("youtube.com/watch") || url.includes("youtu.be/");
 }
@@ -1042,14 +999,19 @@ function stopVideo() {
     var videoContainer = document.getElementById("youtube-video");
     videoContainer.innerHTML = '<div class="youtube-placeholder">Nhập từ khóa hoặc dán link YouTube</div>';
     currentVideoId = null;
-    document.getElementById("youtube-info").style.display = "none";
+    var infoPanel = document.getElementById("youtube-info");
+    if (infoPanel) infoPanel.style.display = "none";
   }
 }
 
 function updateVideoInfo(title, channel) {
-  document.getElementById("youtube-title").textContent = title;
-  document.getElementById("youtube-channel").textContent = channel;
-  document.getElementById("youtube-info").style.display = "block";
+  var titleElement = document.getElementById("youtube-title");
+  var channelElement = document.getElementById("youtube-channel");
+  var infoElement = document.getElementById("youtube-info");
+  
+  if (titleElement) titleElement.textContent = title;
+  if (channelElement) channelElement.textContent = channel;
+  if (infoElement) infoElement.style.display = "block";
 }
 
 // Keyboard shortcuts
@@ -1057,14 +1019,86 @@ document.addEventListener("keydown", function(e) {
   // Ctrl/Cmd + Y to toggle YouTube player
   if ((e.ctrlKey || e.metaKey) && e.key === "y") {
     e.preventDefault();
-    document.getElementById("youtube-btn").click();
+    var youtubeBtn = document.getElementById("youtube-btn");
+    if (youtubeBtn) youtubeBtn.click();
   }
   // Escape to close YouTube player
   if (e.key === "Escape") {
     var mini = document.getElementById("youtube-mini");
-    if (mini.classList.contains("show")) {
-      document.getElementById("youtube-close").click();
+    if (mini && mini.classList.contains("show")) {
+      var closeBtn = document.getElementById("youtube-close");
+      if (closeBtn) closeBtn.click();
     }
+  }
+});
+
+// Initialize YouTube player when DOM is ready
+document.addEventListener("DOMContentLoaded", function() {
+  // YouTube button click handler
+  var youtubeBtn = document.getElementById("youtube-btn");
+  if (youtubeBtn) {
+    youtubeBtn.addEventListener("click", function() {
+      var mini = document.getElementById("youtube-mini");
+      if (mini) {
+        mini.classList.toggle("show");
+        if (mini.classList.contains("show")) {
+          var searchInput = document.getElementById("youtube-search");
+          if (searchInput) searchInput.focus();
+        }
+      }
+    });
+  }
+
+  // YouTube close button handler
+  var closeBtn = document.getElementById("youtube-close");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", function() {
+      var mini = document.getElementById("youtube-mini");
+      if (mini) {
+        mini.classList.remove("show");
+        stopVideo();
+      }
+    });
+  }
+
+  // YouTube minimize button handler
+  var minimizeBtn = document.getElementById("youtube-minimize");
+  if (minimizeBtn) {
+    minimizeBtn.addEventListener("click", function() {
+      var mini = document.getElementById("youtube-mini");
+      if (mini) {
+        isMinimized = !isMinimized;
+        if (isMinimized) {
+          mini.classList.add("minimized");
+          minimizeBtn.textContent = "□";
+        } else {
+          mini.classList.remove("minimized");
+          minimizeBtn.textContent = "━";
+        }
+      }
+    });
+  }
+
+  // YouTube search handler
+  var searchInput = document.getElementById("youtube-search");
+  if (searchInput) {
+    searchInput.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") {
+        var query = this.value.trim();
+        if (query) {
+          if (isYouTubeUrl(query)) {
+            var videoId = extractVideoId(query);
+            if (videoId) {
+              loadVideo(videoId);
+            } else {
+              toast("❌ Link YouTube không hợp lệ");
+            }
+          } else {
+            searchYouTube(query);
+          }
+        }
+      }
+    });
   }
 });
 </script>
