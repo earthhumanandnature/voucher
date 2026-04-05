@@ -1331,52 +1331,64 @@ function showAutocomplete() {
   var currentToken = tokens[tokens.length - 1] || "";
   var command = tokens[0] || "";
   
+  // Fix: If currentToken is a command (starts with /), treat as command selection
+  if (currentToken.startsWith("/") && tokens.length === 1) {
+    command = currentToken;
+    currentToken = "";
+  }
+  // If we have a command and space after it, show parameter suggestions
+  else if (command.startsWith("/") && tokens.length > 1) {
+    // Show parameter suggestions based on command
+  }
+  
   console.log("Parsed tokens:", { tokens: tokens, currentToken: currentToken, command: command }); // Debug
   
   var suggestions = [];
   
-  // If no command yet, show commands
-  if (!command || command.startsWith("/")) {
+  // If no command yet or typing command, show commands
+  if (!command || (command.startsWith("/") && tokens.length === 1)) {
     suggestions = commandDefinitions.filter(function(cmd) {
       return cmd.cmd.toLowerCase().includes(command.toLowerCase());
+    }).map(function(cmd) {
+      return { type: "cmd", value: cmd.cmd, display: cmd.cmd, desc: cmd.desc };
     });
   }
-  // If command exists, show suggestions for parameters
-  else if (command === "/give") {
-    if (tokens.length === 1) {
+  // If command exists and we have space, show suggestions for parameters
+  else if (command === "/give" && tokens.length > 1) {
+    if (tokens.length === 2) {
       // Show email suggestions
       suggestions = emailSuggestions.filter(function(email) {
         return email.toLowerCase().includes(currentToken.toLowerCase());
       }).map(function(email) {
         return { type: "email", value: email, display: email, desc: "Email suggestion" };
       });
-    } else if (tokens.length === 2 && currentToken.toLowerCase() === "voucher") {
+    } else if (tokens.length === 3 && currentToken.toLowerCase() === "voucher") {
       // Show voucher number suggestions
       suggestions = voucherNumberSuggestions.map(function(num) {
         return { type: "number", value: num, display: num, desc: "Voucher #" + num };
       });
-    } else if (tokens.length === 3 && currentToken.match(/^\d+$/)) {
+    } else if (tokens.length === 4 && currentToken.match(/^\d*$/)) {
       // Show percentage suggestions
       suggestions = percentageSuggestions.map(function(pct) {
         return { type: "percentage", value: pct, display: pct + "%", desc: "Discount " + pct + "%" };
       });
     }
-  } else if (command === "/remove" || command === "/used") {
-    if (tokens.length === 1) {
+  } else if ((command === "/remove" || command === "/used") && tokens.length > 1) {
+    if (tokens.length === 2) {
       // Show email suggestions
       suggestions = emailSuggestions.filter(function(email) {
         return email.toLowerCase().includes(currentToken.toLowerCase());
       }).map(function(email) {
         return { type: "email", value: email, display: email, desc: "Email suggestion" };
       });
-    } else if (tokens.length === 2 && currentToken.toLowerCase() === "voucher") {
+    } else if (tokens.length === 3 && currentToken.toLowerCase() === "voucher") {
       // Show voucher number suggestions
       suggestions = voucherNumberSuggestions.map(function(num) {
         return { type: "number", value: num, display: num, desc: "Voucher #" + num };
       });
     }
-  } else if (command === "/search") {
-    if (tokens.length === 1) {
+  } else if (command === "/search" && tokens.length > 1) {
+    if (tokens.length === 2) {
       // Show email suggestions
       suggestions = emailSuggestions.filter(function(email) {
         return email.toLowerCase().includes(currentToken.toLowerCase());
@@ -1421,13 +1433,17 @@ function showAutocomplete() {
       console.log("Clicked suggestion:", { type: type, value: value, currentInput: currentInput, tokens: tokens }); // Debug
       
       if (type === "email") {
-        tokens[0] = value;
+        tokens[1] = value; // Replace email token
       } else if (type === "number") {
-        tokens[tokens.length - 1] = value;
+        tokens[tokens.length - 1] = value; // Replace current token
       } else if (type === "percentage") {
-        tokens[tokens.length - 1] = value;
+        tokens[tokens.length - 1] = value; // Replace current token
       } else if (type === "cmd") {
-        tokens[0] = value;
+        tokens[0] = value; // Replace command
+        // Add space after command if not present
+        if (currentInput && !currentInput.endsWith(" ")) {
+          tokens.push("");
+        }
       }
       
       input.value = tokens.join(" ");
