@@ -394,14 +394,20 @@
         <div class="cmd-autocomplete" id="cmd-autocomplete"></div>
         <div class="cmd-row">
           <div class="cprompt">$</div>
-          <input type="text" id="cmd-input" placeholder="/give email voucher 20  |  /remove email voucher 1  |  /used email voucher 1" />
+          <input type="text" id="cmd-input" placeholder="/give email voucher 20 | /remove email voucher 1 | /used email voucher 1 | /help | /stats | /users | /search | /clear | /export" />
           <button id="cmd-send">ENTER</button>
         </div>
       </div>
       <div class="help">
-        <span>/give</span> &lt;email&gt; voucher &lt;%&gt; &nbsp;→ Cấp voucher giảm giá cho người dùng<br>
+        <span>/give</span> &lt;email&gt; voucher &lt;%&gt; &nbsp;→ Cấp voucher giảm giá<br>
         <span>/remove</span> &lt;email&gt; voucher &lt;STT&gt; &nbsp;→ Xóa voucher theo số thứ tự #<br>
         <span>/used</span> &lt;email&gt; voucher &lt;STT&gt; &nbsp;→ Đánh dấu voucher là đã sử dụng<br>
+        <span>/help</span> &nbsp;→ Hiển thị danh sách lệnh đầy đủ<br>
+        <span>/clear</span> &nbsp;→ Xóa log terminal<br>
+        <span>/stats</span> &nbsp;→ Hiển thị thống kê hệ thống<br>
+        <span>/users</span> &nbsp;→ Hiển thị danh sách người dùng<br>
+        <span>/search</span> &lt;email&gt; &nbsp;→ Tìm kiếm voucher của user<br>
+        <span>/export</span> [format] &nbsp;→ Xuất dữ liệu (json/csv)<br>
         <span>Ví dụ:</span> /give <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="126761776052776a737f627e773c717d7f">[email&#160;protected]</a> voucher 20 &nbsp;|&nbsp; /remove <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6f1a1c0a1d2f0a170e021f030a410c0002">[email&#160;protected]</a> voucher 1 &nbsp;|&nbsp; /used <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="4b3e382e390b2e332a263b272e65282426">[email&#160;protected]</a> voucher 1
       </div>
     </div>
