@@ -127,6 +127,27 @@
   .cmd-suggestion-cmd{color:var(--gold);font-weight:500;min-width:80px;}
   .cmd-suggestion-desc{color:var(--text3);font-size:0.75rem;}
   
+  .email-suggestion{padding:0.6rem 1rem;display:flex;align-items:center;gap:8px;cursor:pointer;transition:background 0.15s;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:0.8rem;}
+  .email-suggestion:last-child{border-bottom:none;}
+  .email-suggestion:hover{background:var(--surface2);}
+  .email-suggestion.selected{background:var(--gold-dim);color:var(--gold);}
+  .suggestion-display{color:var(--gold);font-weight:500;min-width:120px;}
+  .suggestion-desc{color:var(--text3);font-size:0.7rem;}
+  
+  .number-suggestion{padding:0.6rem 1rem;display:flex;align-items:center;gap:8px;cursor:pointer;transition:background 0.15s;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:0.8rem;}
+  .number-suggestion:last-child{border-bottom:none;}
+  .number-suggestion:hover{background:var(--surface2);}
+  .number-suggestion.selected{background:var(--gold-dim);color:var(--gold);}
+  .suggestion-display{color:var(--cyan);font-weight:500;min-width:60px;}
+  .suggestion-desc{color:var(--text3);font-size:0.7rem;}
+  
+  .percentage-suggestion{padding:0.6rem 1rem;display:flex;align-items:center;gap:8px;cursor:pointer;transition:background 0.15s;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:0.8rem;}
+  .percentage-suggestion:last-child{border-bottom:none;}
+  .percentage-suggestion:hover{background:var(--surface2);}
+  .percentage-suggestion.selected{background:var(--gold-dim);color:var(--gold);}
+  .suggestion-display{color:var(--green);font-weight:500;min-width:50px;}
+  .suggestion-desc{color:var(--text3);font-size:0.7rem;}
+  
   /* Command Log Enhancements */
   .cl.success{color:var(--green);}
   .cl.warning{color:var(--gold);}
@@ -1251,6 +1272,20 @@ var commandDefinitions = [
   { cmd: "/export", desc: "Xuất dữ liệu", params: "format" }
 ];
 
+// Email suggestions for autocomplete
+var emailSuggestions = [
+  "user@example.com",
+  "test@gmail.com", 
+  "admin@domain.com",
+  "support@company.com"
+];
+
+// Voucher number suggestions
+var voucherNumberSuggestions = ["1", "2", "3", "5", "10", "15", "20", "25", "30", "50", "75", "100"];
+
+// Percentage suggestions
+var percentageSuggestions = ["5", "10", "15", "20", "25", "30", "35", "40", "45", "50", "60", "70", "75", "80", "90", "95", "100"];
+
 var currentAutocompleteIndex = -1;
 var filteredCommands = [];
 
@@ -1292,48 +1327,114 @@ function showAutocomplete() {
   }
   
   var inputValue = input.value.trim();
+  var tokens = inputValue.split(/\s+/);
+  var currentToken = tokens[tokens.length - 1] || "";
+  var command = tokens[0] || "";
   
-  if (inputValue.length === 0) {
-    // Show all commands
-    filteredCommands = commandDefinitions.slice();
-  } else {
-    // Filter commands based on input
-    filteredCommands = commandDefinitions.filter(function(cmd) {
-      return cmd.cmd.toLowerCase().includes(inputValue.toLowerCase());
+  console.log("Parsed tokens:", { tokens: tokens, currentToken: currentToken, command: command }); // Debug
+  
+  var suggestions = [];
+  
+  // If no command yet, show commands
+  if (!command || command.startsWith("/")) {
+    suggestions = commandDefinitions.filter(function(cmd) {
+      return cmd.cmd.toLowerCase().includes(command.toLowerCase());
     });
   }
+  // If command exists, show suggestions for parameters
+  else if (command === "/give") {
+    if (tokens.length === 1) {
+      // Show email suggestions
+      suggestions = emailSuggestions.filter(function(email) {
+        return email.toLowerCase().includes(currentToken.toLowerCase());
+      }).map(function(email) {
+        return { type: "email", value: email, display: email, desc: "Email suggestion" };
+      });
+    } else if (tokens.length === 2 && currentToken.toLowerCase() === "voucher") {
+      // Show voucher number suggestions
+      suggestions = voucherNumberSuggestions.map(function(num) {
+        return { type: "number", value: num, display: num, desc: "Voucher #" + num };
+      });
+    } else if (tokens.length === 3 && currentToken.match(/^\d+$/)) {
+      // Show percentage suggestions
+      suggestions = percentageSuggestions.map(function(pct) {
+        return { type: "percentage", value: pct, display: pct + "%", desc: "Discount " + pct + "%" };
+      });
+    }
+  } else if (command === "/remove" || command === "/used") {
+    if (tokens.length === 1) {
+      // Show email suggestions
+      suggestions = emailSuggestions.filter(function(email) {
+        return email.toLowerCase().includes(currentToken.toLowerCase());
+      }).map(function(email) {
+        return { type: "email", value: email, display: email, desc: "Email suggestion" };
+      });
+    } else if (tokens.length === 2 && currentToken.toLowerCase() === "voucher") {
+      // Show voucher number suggestions
+      suggestions = voucherNumberSuggestions.map(function(num) {
+        return { type: "number", value: num, display: num, desc: "Voucher #" + num };
+      });
+    }
+  } else if (command === "/search") {
+    if (tokens.length === 1) {
+      // Show email suggestions
+      suggestions = emailSuggestions.filter(function(email) {
+        return email.toLowerCase().includes(currentToken.toLowerCase());
+      }).map(function(email) {
+        return { type: "email", value: email, display: email, desc: "Email suggestion" };
+      });
+    }
+  }
   
-  console.log("Filtered commands:", filteredCommands); // Debug
+  console.log("Generated suggestions:", suggestions); // Debug
   
-  if (filteredCommands.length === 0) {
+  if (suggestions.length === 0) {
     hideAutocomplete();
     return;
   }
   
-  autocomplete.innerHTML = filteredCommands.map(function(cmd, index) {
-    return '<div class="cmd-suggestion" data-cmd="' + cmd.cmd + '" data-index="' + index + '">' +
-      '<span class="cmd-suggestion-cmd">' + cmd.cmd + '</span>' +
-      '<span class="cmd-suggestion-desc">' + cmd.desc + '</span>' +
+  autocomplete.innerHTML = suggestions.map(function(suggestion, index) {
+    var suggestionClass = suggestion.type === "email" ? "email-suggestion" : 
+                         suggestion.type === "number" ? "number-suggestion" : 
+                         suggestion.type === "percentage" ? "percentage-suggestion" : "cmd-suggestion";
+    
+    return '<div class="' + suggestionClass + '" data-type="' + suggestion.type + '" data-value="' + suggestion.value + '" data-index="' + index + '">' +
+      '<span class="suggestion-display">' + suggestion.display + '</span>' +
+      '<span class="suggestion-desc">' + suggestion.desc + '</span>' +
       '</div>';
   }).join("");
   
   // Add click handlers
-  autocomplete.querySelectorAll(".cmd-suggestion").forEach(function(item) {
+  autocomplete.querySelectorAll(".cmd-suggestion, .email-suggestion, .number-suggestion, .percentage-suggestion").forEach(function(item) {
     item.addEventListener("click", function() {
-      document.getElementById("cmd-input").value = this.getAttribute("data-cmd");
+      var type = this.getAttribute("data-type");
+      var value = this.getAttribute("data-value");
+      var currentInput = input.value.trim();
+      var tokens = currentInput.split(/\s+/);
+      
+      if (type === "email") {
+        tokens[0] = value;
+      } else if (type === "number") {
+        tokens[tokens.length - 1] = value;
+      } else if (type === "percentage") {
+        tokens[tokens.length - 1] = value;
+      } else if (type === "cmd") {
+        tokens[0] = value;
+      }
+      
+      input.value = tokens.join(" ");
       hideAutocomplete();
-      document.getElementById("cmd-input").focus();
+      input.focus();
+      
+      // Auto-continue to next parameter
+      setTimeout(function() {
+        showAutocomplete();
+      }, 100);
     });
   });
   
   autocomplete.classList.add("show");
-  autocomplete.style.display = 'block';
-  autocomplete.style.visibility = 'visible';
-  autocomplete.style.opacity = '1';
   currentAutocompleteIndex = -1;
-  
-  // Debug computed styles
-  var computed = window.getComputedStyle(autocomplete);
   console.log("Autocomplete shown - computed styles:", {
     display: computed.display,
     visibility: computed.visibility,
