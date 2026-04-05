@@ -1442,15 +1442,25 @@ function showAutocomplete() {
   });
   
   autocomplete.classList.add("show");
+  autocomplete.style.display = 'block';
+  autocomplete.style.visibility = 'visible';
+  autocomplete.style.opacity = '1';
   currentAutocompleteIndex = -1;
-  console.log("Autocomplete shown - computed styles:", {
-    display: computed.display,
-    visibility: computed.visibility,
-    opacity: computed.opacity,
-    zIndex: computed.zIndex,
-    height: computed.height,
-    offsetHeight: autocomplete.offsetHeight
-  });
+  
+  // Debug computed styles - Fix "computed is not defined" error
+  try {
+    var computed = window.getComputedStyle(autocomplete);
+    console.log("Autocomplete shown - computed styles:", {
+      display: computed.display,
+      visibility: computed.visibility,
+      opacity: computed.opacity,
+      zIndex: computed.zIndex,
+      height: computed.height,
+      offsetHeight: autocomplete.offsetHeight
+    });
+  } catch (e) {
+    console.log("getComputedStyle error:", e.message);
+  }
   console.log("Autocomplete shown, classes:", autocomplete.className); // Debug
 }
 
