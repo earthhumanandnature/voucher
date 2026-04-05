@@ -987,9 +987,6 @@ function toast(msg) {
 var youtubePlayer = null;
 var currentVideoId = null;
 var isMinimized = false;
-var isLooping = false;
-var currentVolume = 50;
-var currentSpeed = 1.0;
 
 function isYouTubeUrl(url) {
   return url.includes("youtube.com/watch") || url.includes("youtu.be/");
@@ -1005,130 +1002,24 @@ function loadVideo(videoId) {
   currentVideoId = videoId;
   var videoContainer = document.getElementById("youtube-video");
   
-  // Create iframe for YouTube video with enhanced controls
+  // Create iframe for YouTube video
   var iframe = document.createElement("iframe");
   iframe.src = "https://www.youtube.com/embed/" + videoId + 
     "?autoplay=1" +
     "&controls=1" +
     "&modestbranding=1" +
-    "&rel=0" +
-    "&enablejsapi=1" +
-    "&origin=" + window.location.origin;
+    "&rel=0";
   iframe.frameBorder = "0";
   iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
   iframe.allowFullscreen = true;
-  iframe.id = "youtube-iframe";
   
   videoContainer.innerHTML = "";
   videoContainer.appendChild(iframe);
   
-  // Setup YouTube API listeners
-  setupYouTubeAPI();
-  
   // Update video info
-  updateVideoInfo("YouTube Video", "Loading...");
+  updateVideoInfo("YouTube Video", "Playing...");
   
   toast("▶️ Đang phát video");
-}
-
-function setupYouTubeAPI() {
-  // Listen for iframe ready message
-  window.addEventListener("message", function(event) {
-    if (event.origin !== "https://www.youtube.com") return;
-    
-    try {
-      var data = JSON.parse(event.data);
-      
-      if (data.event === "onReady") {
-        // Apply current settings when player is ready
-        applyPlayerSettings();
-      } else if (data.event === "onStateChange") {
-        // Handle loop when video ends
-        if (data.info === 0 && isLooping) { // ENDED state
-          setTimeout(function() {
-            if (currentVideoId && isLooping) {
-              seekVideo(0);
-              playVideo();
-            }
-          }, 1000);
-        }
-      }
-    } catch (e) {
-      // Ignore non-JSON messages
-    }
-  });
-}
-
-function applyPlayerSettings() {
-  if (!currentVideoId) return;
-  
-  var iframe = document.getElementById("youtube-iframe");
-  if (!iframe) return;
-  
-  // Apply volume
-  setVolume(currentVolume);
-  
-  // Apply playback rate
-  setPlaybackRate(currentSpeed);
-}
-
-function sendYouTubeCommand(command, args) {
-  var iframe = document.getElementById("youtube-iframe");
-  if (!iframe) return;
-  
-  var message = {
-    event: "command",
-    func: command,
-    args: args || []
-  };
-  
-  iframe.contentWindow.postMessage(JSON.stringify(message), "https://www.youtube.com");
-}
-
-function playVideo() {
-  sendYouTubeCommand("playVideo");
-}
-
-function pauseVideo() {
-  sendYouTubeCommand("pauseVideo");
-}
-
-function seekVideo(seconds) {
-  sendYouTubeCommand("seekTo", [seconds, true]);
-}
-
-function setVolume(volume) {
-  currentVolume = volume;
-  sendYouTubeCommand("setVolume", [volume]);
-  
-  // Update UI
-  var volumeValue = document.getElementById("volume-value");
-  if (volumeValue) volumeValue.textContent = volume + "%";
-}
-
-function setPlaybackRate(rate) {
-  currentSpeed = rate;
-  sendYouTubeCommand("setPlaybackRate", [rate]);
-  
-  // Update UI
-  var speedValue = document.getElementById("speed-value");
-  if (speedValue) speedValue.textContent = (rate / 100) + "x";
-}
-
-function toggleLoop() {
-  isLooping = !isLooping;
-  var loopBtn = document.getElementById("loop-btn");
-  if (loopBtn) {
-    if (isLooping) {
-      loopBtn.classList.add("active");
-      loopBtn.textContent = "🔁 Looping";
-    } else {
-      loopBtn.classList.remove("active");
-      loopBtn.textContent = "🔁 Loop";
-    }
-  }
-  
-  toast(isLooping ? "🔁 Loop đã bật" : "⏸️ Loop đã tắt");
 }
 
 function stopVideo() {
@@ -1138,14 +1029,6 @@ function stopVideo() {
     currentVideoId = null;
     var infoPanel = document.getElementById("youtube-info");
     if (infoPanel) infoPanel.style.display = "none";
-    
-    // Reset controls
-    isLooping = false;
-    var loopBtn = document.getElementById("loop-btn");
-    if (loopBtn) {
-      loopBtn.classList.remove("active");
-      loopBtn.textContent = "🔁 Loop";
-    }
   }
 }
 
@@ -1194,32 +1077,18 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // YouTube close button handler
-  var closeBtn = document.getElementById("youtube-close");
-  if (closeBtn) {
-    closeBtn.addEventListener("click", function() {
-      var mini = document.getElementById("youtube-mini");
-      if (mini) {
-        mini.classList.remove("show");
-        stopVideo();
-      }
-    });
-  }
-
   // YouTube minimize button handler
   var minimizeBtn = document.getElementById("youtube-minimize");
   if (minimizeBtn) {
     minimizeBtn.addEventListener("click", function() {
       var mini = document.getElementById("youtube-mini");
-      if (mini) {
-        isMinimized = !isMinimized;
-        if (isMinimized) {
-          mini.classList.add("minimized");
-          minimizeBtn.textContent = "□";
-        } else {
-          mini.classList.remove("minimized");
-          minimizeBtn.textContent = "━";
-        }
+      isMinimized = !isMinimized;
+      if (isMinimized) {
+        mini.classList.add("minimized");
+        minimizeBtn.textContent = "□";
+      } else {
+        mini.classList.remove("minimized");
+        minimizeBtn.textContent = "━";
       }
     });
   }
@@ -1265,30 +1134,6 @@ document.addEventListener("DOMContentLoaded", function() {
       }
     });
   }
-  
-  // Volume slider handler
-  var volumeSlider = document.getElementById("volume-slider");
-  if (volumeSlider) {
-    volumeSlider.addEventListener("input", function() {
-      setVolume(parseInt(this.value));
-    });
-  }
-  
-  // Speed slider handler
-  var speedSlider = document.getElementById("speed-slider");
-  if (speedSlider) {
-    speedSlider.addEventListener("input", function() {
-      setPlaybackRate(parseInt(this.value));
-    });
-  }
-  
-  // Loop button handler
-  var loopBtn = document.getElementById("loop-btn");
-  if (loopBtn) {
-    loopBtn.addEventListener("click", function() {
-      toggleLoop();
-    });
-  }
 });
 </script>
 
@@ -1304,28 +1149,12 @@ document.addEventListener("DOMContentLoaded", function() {
     <input type="text" class="youtube-search" id="youtube-search" placeholder="Dán link YouTube...">
     <div class="youtube-controls">
       <button class="youtube-btn-small" id="youtube-minimize" title="Thu nhỏ">━</button>
-      <button class="youtube-btn-small" id="youtube-close" title="Đóng">✕</button>
     </div>
   </div>
   <div class="youtube-body">
     <div class="youtube-video" id="youtube-video">
       <div class="youtube-placeholder">
         Dán link YouTube để phát video
-      </div>
-    </div>
-    <div class="youtube-player-controls">
-      <div class="youtube-control-group">
-        <span class="youtube-control-label">🔊</span>
-        <input type="range" class="youtube-slider" id="volume-slider" min="0" max="100" value="50">
-        <span id="volume-value" class="youtube-control-label">50%</span>
-      </div>
-      <div class="youtube-control-group">
-        <span class="youtube-control-label">⚡</span>
-        <input type="range" class="youtube-slider" id="speed-slider" min="25" max="200" value="100" step="25">
-        <span id="speed-value" class="youtube-control-label">1x</span>
-      </div>
-      <div class="youtube-control-group">
-        <button class="youtube-button" id="loop-btn">🔁 Loop</button>
       </div>
     </div>
     <div class="youtube-info" id="youtube-info" style="display:none;">
