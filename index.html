@@ -191,9 +191,13 @@
     border:1px solid var(--border2);border-radius:12px;
     display:none;flex-direction:column;overflow:hidden;
     box-shadow:0 8px 32px rgba(0,0,0,0.3);
+    transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   #youtube-mini.show{display:flex;}
-  #youtube-mini.minimized{width:200px;height:60px;}
+  #youtube-mini.minimized{
+    width:200px;height:60px;
+    transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
   
   .youtube-header{
     background:var(--surface2);padding:0.8rem 1rem;
@@ -259,12 +263,33 @@
   .youtube-info{
     padding:0.8rem 1rem;background:var(--surface2);
     border-top:1px solid var(--border);max-height:80px;overflow-y:auto;
+    transition:opacity 0.3s ease, max-height 0.3s ease;
   }
   .youtube-title{font-family:'DM Sans',sans-serif;font-weight:600;
     font-size:0.85rem;color:var(--text);margin-bottom:4px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .youtube-channel{font-family:'DM Mono',monospace;font-size:0.75rem;
     color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  
+  #youtube-mini.minimized .youtube-video{
+    opacity:0;
+    max-height:0;
+    transition:opacity 0.3s ease, max-height 0.3s ease;
+  }
+  
+  #youtube-mini.minimized .youtube-info{
+    opacity:0;
+    max-height:0;
+    padding:0;
+    margin:0;
+    transition:opacity 0.3s ease, max-height 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+  }
+  
+  #youtube-mini.minimized .youtube-search{
+    font-size:0.75rem;
+    padding:0.3rem 0.6rem;
+    transition:font-size 0.3s ease, padding 0.3s ease;
+  }
   
   @media(max-width:600px){
     #youtube-btn{bottom:1.2rem;left:1rem;width:40px;height:40px;}
@@ -1083,12 +1108,34 @@ document.addEventListener("DOMContentLoaded", function() {
     minimizeBtn.addEventListener("click", function() {
       var mini = document.getElementById("youtube-mini");
       isMinimized = !isMinimized;
+      
       if (isMinimized) {
+        // Add minimized class for smooth transition
         mini.classList.add("minimized");
         minimizeBtn.textContent = "□";
+        
+        // Pause video when minimized to save resources
+        var iframe = mini.querySelector('iframe');
+        if (iframe) {
+          var src = iframe.src;
+          iframe.src = ''; // Stop video
+          setTimeout(function() {
+            iframe.src = src; // Restore when maximized
+          }, 100);
+        }
       } else {
+        // Remove minimized class for smooth transition
         mini.classList.remove("minimized");
         minimizeBtn.textContent = "━";
+        
+        // Restore video when maximized
+        var iframe = mini.querySelector('iframe');
+        if (iframe && !iframe.src) {
+          if (currentVideoId) {
+            iframe.src = "https://www.youtube.com/embed/" + currentVideoId + 
+              "?autoplay=1&controls=1&modestbranding=1&rel=0";
+          }
+        }
       }
     });
   }
