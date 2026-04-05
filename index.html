@@ -996,8 +996,21 @@ function extractVideoId(url) {
 function searchYouTube(query) {
   toast("🔍 Đang tìm kiếm: " + query);
   
-  // Mock YouTube search results with realistic data
+  // Mock YouTube search results with realistic data including Vietnamese videos
   var mockResults = [
+    // Vietnamese Videos
+    { id: "4B_1j2k8Q8c", title: "Sơn Tùng M-TP - Hãy Trao Cho Anh", channel: "Sơn Tùng M-TP", views: "500M views" },
+    { id: "XqZso6555Lc", title: "Bích Phương - Bùa Yêu", channel: "Bích Phương", views: "200M views" },
+    { id: "1qLw7M5VH2I", title: "Đen Vâu - Mang Tiền Về Cho Mẹ", channel: "Đen Vâu", views: "150M views" },
+    { id: "9MgOQu8wZ2U", title: "Hồ Ngọc Hà - Đừng Lời Nói Dối", channel: "Hồ Ngọc Hà", views: "100M views" },
+    { id: "JGwWNGJdvx8", title: "No Phan - Đi Để Trở Về", channel: "No Phan", views: "80M views" },
+    { id: "kVJpKQ8b8jI", title: "Lê Bảo Bình - Việt Nam Tôi Đợi", channel: "Lê Bảo Bình", views: "120M views" },
+    { id: "fRh_vgS2D8U", title: "Hoàng Thùy Linh - Để Mị Nói Cho Mà Nghe", channel: "Hoàng Thùy Linh", views: "90M views" },
+    { id: "09R8_2nJtjg", title: "K-ICM & Jack - Hẹn Yêu", channel: "K-ICM", views: "250M views" },
+    { id: "pRpeEdMmmQ0", title: "MTP - Nơi Này Có Anh", channel: "Sơn Tùng M-TP", views: "300M views" },
+    { id: "l3wh2T8Aq1g", title: "Văn Mai Hương - Ngày Đầu Tiên", channel: "Văn Mai Hương", views: "60M views" },
+    
+    // International Videos
     { id: "dQw4w9WgXcQ", title: "Never Gonna Give You Up", channel: "Rick Astley", views: "1.4B views" },
     { id: "9bZkp7q19f0", title: "Gangnam Style", channel: "PSY", views: "4.7B views" },
     { id: "kJQP7kiw5Fk", title: "Luis Fonsi - Despacito", channel: "Luis Fonsi", views: "8.2B views" },
@@ -1010,14 +1023,25 @@ function searchYouTube(query) {
     { id: "l3wh2T8Aq1g", title: "Wiz Khalifa - See You Again", channel: "Wiz Khalifa", views: "5.6B views" }
   ];
   
-  // Filter results based on query (simple text matching)
+  // Filter results based on query (improved text matching with Vietnamese support)
   var filteredResults = mockResults.filter(function(video) {
     var searchTerm = query.toLowerCase();
-    return video.title.toLowerCase().includes(searchTerm) || 
-           video.channel.toLowerCase().includes(searchTerm);
+    var title = video.title.toLowerCase();
+    var channel = video.channel.toLowerCase();
+    
+    // Support Vietnamese characters and common search terms
+    return title.includes(searchTerm) || 
+           channel.includes(searchTerm) ||
+           // Support common Vietnamese search variations
+           (searchTerm.includes('viet') && (title.includes('việt') || title.includes('viet'))) ||
+           (searchTerm.includes('son tung') && title.includes('sơn tùng')) ||
+           (searchTerm.includes('den') && title.includes('đen')) ||
+           (searchTerm.includes('jack') && title.includes('jack')) ||
+           (searchTerm.includes('bich') && title.includes('bích')) ||
+           (searchTerm.includes('hoang') && title.includes('hoàng'));
   });
   
-  // If no matches, return all results
+  // If no matches, return all results (prioritize Vietnamese first)
   if (filteredResults.length === 0) {
     filteredResults = mockResults.slice(0, 10);
   } else {
