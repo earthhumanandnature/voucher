@@ -114,6 +114,8 @@
   }
   .cmd-autocomplete.show{
     display:block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   .cmd-suggestion{
     padding:0.6rem 1rem;display:flex;align-items:center;gap:8px;
@@ -1116,7 +1118,21 @@ function showAutocomplete() {
   });
   
   autocomplete.classList.add("show");
+  autocomplete.style.display = 'block';
+  autocomplete.style.visibility = 'visible';
+  autocomplete.style.opacity = '1';
   currentAutocompleteIndex = -1;
+  
+  // Debug computed styles
+  var computed = window.getComputedStyle(autocomplete);
+  console.log("Autocomplete shown - computed styles:", {
+    display: computed.display,
+    visibility: computed.visibility,
+    opacity: computed.opacity,
+    zIndex: computed.zIndex,
+    height: computed.height,
+    offsetHeight: autocomplete.offsetHeight
+  });
   console.log("Autocomplete shown, classes:", autocomplete.className); // Debug
 }
 
