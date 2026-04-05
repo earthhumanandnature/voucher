@@ -1280,6 +1280,8 @@ var emailSuggestions = [
   "support@company.com"
 ];
 
+console.log("Email suggestions loaded:", emailSuggestions); // Debug
+
 // Voucher number suggestions
 var voucherNumberSuggestions = ["1", "2", "3", "5", "10", "15", "20", "25", "30", "50", "75", "100"];
 
@@ -1355,23 +1357,30 @@ function showAutocomplete() {
   }
   // If command exists and we have space, show suggestions for parameters
   else if (command === "/give" && tokens.length > 1) {
+    console.log("Processing /give command with tokens:", tokens); // Debug
     if (tokens.length === 2) {
+      console.log("Showing email suggestions for token:", currentToken); // Debug
       // Show email suggestions
       suggestions = emailSuggestions.filter(function(email) {
         return email.toLowerCase().includes(currentToken.toLowerCase());
       }).map(function(email) {
         return { type: "email", value: email, display: email, desc: "Email suggestion" };
       });
+      console.log("Email suggestions generated:", suggestions); // Debug
     } else if (tokens.length === 3 && currentToken.toLowerCase() === "voucher") {
+      console.log("Showing voucher number suggestions"); // Debug
       // Show voucher number suggestions
       suggestions = voucherNumberSuggestions.map(function(num) {
         return { type: "number", value: num, display: num, desc: "Voucher #" + num };
       });
     } else if (tokens.length === 4 && currentToken.match(/^\d*$/)) {
+      console.log("Showing percentage suggestions for token:", currentToken); // Debug
       // Show percentage suggestions
       suggestions = percentageSuggestions.map(function(pct) {
         return { type: "percentage", value: pct, display: pct + "%", desc: "Discount " + pct + "%" };
       });
+    } else {
+      console.log("No suggestions for tokens length:", tokens.length, "currentToken:", currentToken); // Debug
     }
   } else if ((command === "/remove" || command === "/used") && tokens.length > 1) {
     if (tokens.length === 2) {
