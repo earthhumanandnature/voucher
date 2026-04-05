@@ -1062,11 +1062,116 @@ function addTestButton() {
   document.body.appendChild(btn);
 }
 
-// Run test after 3 seconds
+// Comprehensive DOM debug
+function comprehensiveDOMDebug() {
+  console.log("=== COMPREHENSIVE DOM DEBUG ===");
+  
+  // Check if elements exist
+  var autocomplete = document.getElementById("cmd-autocomplete");
+  var cmdInput = document.getElementById("cmd-input");
+  var cmdWrap = document.querySelector(".cmd-wrap");
+  var cmdRow = document.querySelector(".cmd-row");
+  
+  console.log("Elements found:", {
+    autocomplete: !!autocomplete,
+    cmdInput: !!cmdInput,
+    cmdWrap: !!cmdWrap,
+    cmdRow: !!cmdRow
+  });
+  
+  // Check parent structure
+  if (autocomplete) {
+    var parent = autocomplete.parentElement;
+    console.log("Autocomplete parent:", parent);
+    console.log("Parent classes:", parent.className);
+    console.log("Parent styles:", {
+      display: window.getComputedStyle(parent).display,
+      visibility: window.getComputedStyle(parent).visibility,
+      overflow: window.getComputedStyle(parent).overflow,
+      position: window.getComputedStyle(parent).position
+    });
+  }
+  
+  // Check if autocomplete is actually in DOM
+  var allElements = document.querySelectorAll("*");
+  var foundAutocomplete = false;
+  for (var i = 0; i < allElements.length; i++) {
+    if (allElements[i].id === "cmd-autocomplete") {
+      foundAutocomplete = true;
+      console.log("Autocomplete found in DOM at index:", i);
+      break;
+    }
+  }
+  console.log("Autocomplete in DOM:", foundAutocomplete);
+  
+  // Create standalone test element
+  var testDiv = document.createElement("div");
+  testDiv.id = "standalone-test";
+  testDiv.style.cssText = `
+    position: fixed;
+    top: 100px;
+    left: 100px;
+    width: 200px;
+    height: 100px;
+    background: lime;
+    border: 3px solid red;
+    z-index: 999999;
+    padding: 10px;
+    color: black;
+    font-weight: bold;
+  `;
+  testDiv.innerHTML = "STANDALONE TEST<br>If you see this, DOM works";
+  document.body.appendChild(testDiv);
+  
+  // Try to append autocomplete to body
+  if (autocomplete) {
+    var clone = autocomplete.cloneNode(true);
+    clone.id = "body-autocomplete";
+    clone.style.cssText = `
+      position: fixed;
+      top: 200px;
+      left: 100px;
+      width: 300px;
+      height: 150px;
+      background: orange;
+      border: 3px solid blue;
+      z-index: 999998;
+      padding: 10px;
+      color: white;
+      font-weight: bold;
+    `;
+    clone.innerHTML = "CLONE TEST<br>This should be visible";
+    document.body.appendChild(clone);
+  }
+  
+  console.log("Added standalone test elements to body");
+}
+
+// Add debug button
+function addDebugButton() {
+  var btn = document.createElement("button");
+  btn.textContent = "DOM DEBUG";
+  btn.style.cssText = `
+    position: fixed;
+    top: 50px;
+    right: 10px;
+    z-index: 100000;
+    background: blue;
+    color: white;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+  `;
+  btn.onclick = comprehensiveDOMDebug;
+  document.body.appendChild(btn);
+}
+
+// Run debug after 2 seconds
 setTimeout(function() {
-  forceTestAutocomplete();
-  addTestButton();
-}, 3000);
+  comprehensiveDOMDebug();
+  addDebugButton();
+}, 2000);
 
 document.getElementById("cmd-send").addEventListener("click", runCmd);
 document.getElementById("cmd-input").addEventListener("keydown", function(e) { 
