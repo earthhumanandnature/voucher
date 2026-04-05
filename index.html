@@ -171,6 +171,70 @@
   #discord-btn:active{transform:scale(0.97);}
   #discord-btn svg{width:20px;height:20px;flex-shrink:0;}
   @media(max-width:600px){#discord-btn{bottom:1.2rem;right:1rem;padding:0.6rem 0.9rem 0.6rem 0.75rem;font-size:0.82rem;}}
+
+  /* YOUTUBE MINI PLAYER */
+  #youtube-btn{
+    position:fixed;bottom:1.8rem;left:1.8rem;z-index:1000;
+    width:48px;height:48px;border-radius:50%;
+    background:#FF0000;color:#fff;
+    border:none;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;box-shadow:0 4px 20px rgba(255,0,0,0.3);
+    transition:transform 0.18s,box-shadow 0.18s,background 0.18s;
+  }
+  #youtube-btn:hover{background:#CC0000;transform:translateY(-2px);box-shadow:0 6px 28px rgba(255,0,0,0.4);}
+  #youtube-btn:active{transform:scale(0.97);}
+  #youtube-btn svg{width:24px;height:24px;flex-shrink:0;}
+  
+  #youtube-mini{
+    position:fixed;bottom:6rem;left:1.8rem;z-index:999;
+    width:320px;height:240px;background:var(--surface);
+    border:1px solid var(--border2);border-radius:12px;
+    display:none;flex-direction:column;overflow:hidden;
+    box-shadow:0 8px 32px rgba(0,0,0,0.3);
+  }
+  #youtube-mini.show{display:flex;}
+  #youtube-mini.minimized{width:200px;height:60px;}
+  
+  .youtube-header{
+    background:var(--surface2);padding:0.8rem 1rem;
+    border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;
+  }
+  .youtube-search{
+    flex:1;background:var(--surface);border:1px solid var(--border);
+    border-radius:6px;padding:0.4rem 0.8rem;color:var(--text);
+    font-family:'DM Sans',sans-serif;font-size:0.85rem;outline:none;
+  }
+  .youtube-search:focus{border-color:var(--gold);}
+  .youtube-controls{display:flex;gap:6px;}
+  .youtube-btn-small{
+    background:none;border:none;color:var(--text3);cursor:pointer;
+    padding:4px;border-radius:4px;transition:background 0.15s,color 0.15s;
+  }
+  .youtube-btn-small:hover{background:var(--surface);color:var(--text);}
+  
+  .youtube-body{flex:1;display:flex;flex-direction:column;}
+  .youtube-video{flex:1;background:#000;position:relative;}
+  .youtube-video iframe{width:100%;height:100%;border:none;}
+  .youtube-placeholder{
+    display:flex;align-items:center;justify-content:center;height:100%;
+    color:var(--text3);font-family:'DM Mono',monospace;font-size:0.8rem;
+  }
+  
+  .youtube-info{
+    padding:0.8rem 1rem;background:var(--surface2);
+    border-top:1px solid var(--border);max-height:80px;overflow-y:auto;
+  }
+  .youtube-title{font-family:'DM Sans',sans-serif;font-weight:600;
+    font-size:0.85rem;color:var(--text);margin-bottom:4px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .youtube-channel{font-family:'DM Mono',monospace;font-size:0.75rem;
+    color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  
+  @media(max-width:600px){
+    #youtube-btn{bottom:1.2rem;left:1rem;width:40px;height:40px;}
+    #youtube-btn svg{width:20px;height:20px;}
+    #youtube-mini{bottom:5rem;left:1rem;width:280px;height:200px;}
+  }
 </style>
 </head>
 <body>
@@ -882,9 +946,163 @@ function toast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(function() { t.classList.remove("show"); }, 2800);
 }
+
+/* ─── YOUTUBE MINI PLAYER ─── */
+var youtubePlayer = null;
+var currentVideoId = null;
+var isMinimized = false;
+
+document.getElementById("youtube-btn").addEventListener("click", function() {
+  var mini = document.getElementById("youtube-mini");
+  mini.classList.toggle("show");
+  if (mini.classList.contains("show")) {
+    document.getElementById("youtube-search").focus();
+  }
+});
+
+document.getElementById("youtube-close").addEventListener("click", function() {
+  document.getElementById("youtube-mini").classList.remove("show");
+  stopVideo();
+});
+
+document.getElementById("youtube-minimize").addEventListener("click", function() {
+  var mini = document.getElementById("youtube-mini");
+  isMinimized = !isMinimized;
+  if (isMinimized) {
+    mini.classList.add("minimized");
+    document.getElementById("youtube-minimize").textContent="□";
+  } else {
+    mini.classList.remove("minimized");
+    document.getElementById("youtube-minimize").textContent="━";
+  }
+});
+
+document.getElementById("youtube-search").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") {
+    var query = this.value.trim();
+    if (query) {
+      if (isYouTubeUrl(query)) {
+        var videoId = extractVideoId(query);
+        if (videoId) {
+          loadVideo(videoId);
+        } else {
+          toast("❌ Link YouTube không hợp lệ");
+        }
+      } else {
+        searchYouTube(query);
+      }
+    }
+  }
+});
+
+function isYouTubeUrl(url) {
+  return url.includes("youtube.com/watch") || url.includes("youtu.be/");
+}
+
+function extractVideoId(url) {
+  var regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+  var match = url.match(regExp);
+  return (match && match[7].length === 11) ? match[7] : null;
+}
+
+function searchYouTube(query) {
+  // Simple YouTube search using YouTube Data API (you'll need to set up API key)
+  // For demo purposes, we'll use a mock search
+  toast("🔍 Đang tìm kiếm: " + query);
+  
+  // Mock search results - in production, use YouTube Data API
+  setTimeout(function() {
+    var mockVideoId = "dQw4w9WgXcQ"; // Rick roll video as default
+    loadVideo(mockVideoId);
+  }, 1000);
+}
+
+function loadVideo(videoId) {
+  currentVideoId = videoId;
+  var videoContainer = document.getElementById("youtube-video");
+  
+  // Create iframe for YouTube video
+  var iframe = document.createElement("iframe");
+  iframe.src = "https://www.youtube.com/embed/" + videoId + "?autoplay=1&controls=1&modestbranding=1&rel=0";
+  iframe.frameBorder = "0";
+  iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+  iframe.allowFullscreen = true;
+  
+  videoContainer.innerHTML = "";
+  videoContainer.appendChild(iframe);
+  
+  // Update video info (mock data for demo)
+  updateVideoInfo("Sample Video Title", "Sample Channel");
+  
+  toast("▶️ Đang phát video");
+}
+
+function stopVideo() {
+  if (currentVideoId) {
+    var videoContainer = document.getElementById("youtube-video");
+    videoContainer.innerHTML = '<div class="youtube-placeholder">Nhập từ khóa hoặc dán link YouTube</div>';
+    currentVideoId = null;
+    document.getElementById("youtube-info").style.display = "none";
+  }
+}
+
+function updateVideoInfo(title, channel) {
+  document.getElementById("youtube-title").textContent = title;
+  document.getElementById("youtube-channel").textContent = channel;
+  document.getElementById("youtube-info").style.display = "block";
+}
+
+// Keyboard shortcuts
+document.addEventListener("keydown", function(e) {
+  // Ctrl/Cmd + Y to toggle YouTube player
+  if ((e.ctrlKey || e.metaKey) && e.key === "y") {
+    e.preventDefault();
+    document.getElementById("youtube-btn").click();
+  }
+  // Escape to close YouTube player
+  if (e.key === "Escape") {
+    var mini = document.getElementById("youtube-mini");
+    if (mini.classList.contains("show")) {
+      document.getElementById("youtube-close").click();
+    }
+  }
+});
 </script>
+
+<!-- YOUTUBE MINI PLAYER -->
+<button id="youtube-btn" title="YouTube Mini Player">
+  <svg viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+  </svg>
+</button>
+
+<div id="youtube-mini">
+  <div class="youtube-header">
+    <input type="text" class="youtube-search" id="youtube-search" placeholder="Tìm video hoặc dán link...">
+    <div class="youtube-controls">
+      <button class="youtube-btn-small" id="youtube-minimize" title="Thu nhỏ">━</button>
+      <button class="youtube-btn-small" id="youtube-close" title="Đóng">✕</button>
+    </div>
+  </div>
+  <div class="youtube-body">
+    <div class="youtube-video" id="youtube-video">
+      <div class="youtube-placeholder">
+        Nhập từ khóa hoặc dán link YouTube
+      </div>
+    </div>
+    <div class="youtube-info" id="youtube-info" style="display:none;">
+      <div class="youtube-title" id="youtube-title">—</div>
+      <div class="youtube-channel" id="youtube-channel">—</div>
+    </div>
+  </div>
+</div>
 
 <!-- DISCORD SUPPORT BUTTON -->
 <a id="discord-btn" href="http://discordapp.com/users/1179285160097742902" target="_blank" rel="noopener noreferrer">
   <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0
+    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.9 19.9 0 0 0 5.993-3.03.082.082 0 0 0 .031-.057c.5-4.9-.8-9.3-2.8-13.1a.074.074 0 0 0-.032-.027zM8.02 15.33c-1.18 0-2.16-.96-2.16-2.16 0-1.19.96-2.16 2.16-2.16 1.19 0 2.16.97 2.16 2.16 0 1.2-.97 2.16-2.16 2.16zm7.96 0c-1.18 0-2.16-.96-2.16-2.16 0-1.19.96-2.16 2.16-2.16 1.19 0 2.16.97 2.16 2.16 0 1.2-.97 2.16-2.16 2.16z"/>
+  </svg>
+  Discord Support
+</a>
+</body>
+</html>
