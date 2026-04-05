@@ -423,6 +423,7 @@
           <div class="cl inf">VoucherVault Owner Terminal — gõ lệnh bên dưới</div>
         </div>
         <div class="cmd-autocomplete" id="cmd-autocomplete"></div>
+        <div class="cmd-phase-hint" id="cmd-phase-hint" style="display: none; margin-bottom: 8px; padding: 8px 12px; background: var(--surface2); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--text3);"></div>
         <div class="cmd-row">
           <div class="cprompt">$</div>
           <input type="text" id="cmd-input" placeholder="/give email voucher 20 | /remove email voucher 1 | /used email voucher 1 | /help | /stats | /users | /search | /clear | /export" />
@@ -1321,6 +1322,35 @@ var voucherNumberSuggestions = ["1", "2", "3", "5", "10", "15", "20", "25", "30"
 // Percentage suggestions
 var percentageSuggestions = ["5", "10", "15", "20", "25", "30", "35", "40", "45", "50", "60", "70", "75", "80", "90", "95", "100"];
 
+// Update phase hint to show current step
+function updatePhaseHint(command, tokens) {
+  var hint = document.getElementById("cmd-phase-hint");
+  if (!hint) return;
+  
+  if (command === "/give") {
+    if (tokens.length === 1) {
+      hint.innerHTML = "📋 <strong>Bước 1:</strong> Chọn command /give";
+      hint.style.display = "block";
+    } else if (tokens.length === 2) {
+      hint.innerHTML = "📧 <strong>Bước 2:</strong> Chọn email người dùng";
+      hint.style.display = "block";
+    } else if (tokens.length === 3) {
+      hint.innerHTML = "🎟️ <strong>Bước 3:</strong> Gõ 'voucher'";
+      hint.style.display = "block";
+    } else if (tokens.length === 4) {
+      hint.innerHTML = "🔢 <strong>Bước 4:</strong> Chọn số voucher";
+      hint.style.display = "block";
+    } else if (tokens.length === 5) {
+      hint.innerHTML = "💰 <strong>Bước 5:</strong> Chọn % giảm giá";
+      hint.style.display = "block";
+    } else {
+      hint.style.display = "none";
+    }
+  } else {
+    hint.style.display = "none";
+  }
+}
+
 var currentAutocompleteIndex = -1;
 var filteredCommands = [];
 
@@ -1391,41 +1421,37 @@ function showAutocomplete() {
   // If command exists and we have space, show suggestions for parameters
   else if (command === "/give" && tokens.length > 1) {
     console.log("Processing /give command with tokens:", tokens); // Debug
+    
     if (tokens.length === 2) {
-      console.log("Showing email suggestions for token:", currentToken); // Debug
-      // Show email suggestions - only if currentToken is empty or partial email
-      if (!currentToken || currentToken === "" || currentToken.includes("@")) {
-        suggestions = emailSuggestions.filter(function(email) {
-          return email.toLowerCase().includes(currentToken.toLowerCase());
-        }).map(function(email) {
-          return { type: "email", value: email, display: email, desc: "Email suggestion" };
-        });
-      } else {
-        // Show "voucher" keyword suggestion
-        suggestions = [{ type: "keyword", value: "voucher", display: "voucher", desc: "Type 'voucher' to continue" }];
-      }
-      console.log("Email suggestions generated:", suggestions); // Debug
+      // EMAIL PHASE - Show email suggestions
+      console.log("EMAIL PHASE - Showing email suggestions"); // Debug
+      suggestions = emailSuggestions.filter(function(email) {
+        return email.toLowerCase().includes(currentToken.toLowerCase());
+      }).map(function(email) {
+        return { type: "email", value: email, display: "📧 " + email, desc: "Email người dùng" };
+      });
+      
     } else if (tokens.length === 3) {
-      if (currentToken.toLowerCase() === "voucher") {
-        console.log("Showing voucher number suggestions"); // Debug
-        // Show voucher number suggestions
-        suggestions = voucherNumberSuggestions.map(function(num) {
-          return { type: "number", value: num, display: num, desc: "Voucher #" + num };
-        });
-      } else {
-        // Show "voucher" keyword suggestion
-        suggestions = [{ type: "keyword", value: "voucher", display: "voucher", desc: "Type 'voucher' to continue" }];
-      }
+      // VOUCHER PHASE - Show "voucher" keyword
+      console.log("VOUCHER PHASE - Show voucher keyword"); // Debug
+      suggestions = [{ type: "keyword", value: "voucher", display: "🎟️ voucher", desc: "Gõ 'voucher' để tiếp tục" }];
+      
     } else if (tokens.length === 4) {
-      if (currentToken.match(/^\d*$/)) {
-        console.log("Showing percentage suggestions for token:", currentToken); // Debug
-        // Show percentage suggestions
-        suggestions = percentageSuggestions.map(function(pct) {
-          return { type: "percentage", value: pct, display: pct + "%", desc: "Discount " + pct + "%" };
-        });
-      }
+      // NUMBER PHASE - Show voucher numbers
+      console.log("NUMBER PHASE - Showing voucher numbers"); // Debug
+      suggestions = voucherNumberSuggestions.map(function(num) {
+        return { type: "number", value: num, display: "🔢 " + num, desc: "Voucher số " + num };
+      });
+      
+    } else if (tokens.length === 5) {
+      // PERCENTAGE PHASE - Show percentages
+      console.log("PERCENTAGE PHASE - Showing percentages"); // Debug
+      suggestions = percentageSuggestions.map(function(pct) {
+        return { type: "percentage", value: pct, display: "💰 " + pct + "%", desc: "Giảm giá " + pct + "%" };
+      });
+      
     } else {
-      console.log("No suggestions for tokens length:", tokens.length, "currentToken:", currentToken); // Debug
+      console.log("COMPLETE - No more suggestions needed"); // Debug
     }
   } else if ((command === "/remove" || command === "/used") && tokens.length > 1) {
     if (tokens.length === 2) {
@@ -1453,6 +1479,9 @@ function showAutocomplete() {
   }
   
   console.log("Generated suggestions:", suggestions); // Debug
+  
+  // Update phase hint
+  updatePhaseHint(command, tokens);
   
   if (suggestions.length === 0) {
     hideAutocomplete();
@@ -1489,16 +1518,19 @@ function showAutocomplete() {
       
       if (type === "email") {
         tokens[1] = value; // Replace email token
+        tokens = tokens.slice(0, 2); // Keep only command and email
+      } else if (type === "keyword") {
+        tokens[2] = value; // Replace voucher keyword
+        tokens = tokens.slice(0, 3); // Keep only command, email, voucher
       } else if (type === "number") {
-        tokens[tokens.length - 1] = value; // Replace current token
+        tokens[3] = value; // Replace number token
+        tokens = tokens.slice(0, 4); // Keep only command, email, voucher, number
       } else if (type === "percentage") {
-        tokens[tokens.length - 1] = value; // Replace current token
+        tokens[4] = value; // Replace percentage token
+        tokens = tokens.slice(0, 5); // Keep all tokens
       } else if (type === "cmd") {
         tokens[0] = value; // Replace command
-        // Add space after command if not present
-        if (currentInput && !currentInput.endsWith(" ")) {
-          tokens.push("");
-        }
+        tokens = [value]; // Start fresh with just command
       }
       
       input.value = tokens.join(" ");
