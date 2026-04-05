@@ -1351,7 +1351,7 @@ function runCmd() {
   inp.value = "";
   hideAutocomplete();
 
-  var g = raw.match(/^\/give\s+(\S+)\s+voucher\s+(\d+(?:\.\d+)?)\s*$/i);
+  var g = raw.match(/^\/give\s+(\S+)\s+voucher\s+(\d+)\s+(\d+(?:\.\d+)?)\s*$/i);
   var r = raw.match(/^\/remove\s+(\S+)\s+voucher\s+(\d+)\s*$/i);
   var u = raw.match(/^\/used\s+(\S+)\s+voucher\s+(\d+)\s*$/i);
   var h = raw.match(/^\/help\s*$/i);
@@ -1363,7 +1363,7 @@ function runCmd() {
   
   if (h) {
     clog("📋 Danh sách lệnh:", "info");
-    clog("• /give email voucher [%] - Cấp voucher giảm giá", "info");
+    clog("• /give email voucher [số] [%] - Cấp nhiều voucher giảm giá", "info");
     clog("• /remove email voucher [STT] - Xóa voucher theo số thứ tự", "info");
     clog("• /used email voucher [STT] - Đánh dấu đã sử dụng", "info");
     clog("• /clear - Xóa log terminal", "info");
@@ -1408,7 +1408,7 @@ function runCmd() {
     };
     clog("• " + JSON.stringify(data, null, 2), "info");
   } else if (g) {
-    cmdGive(g[1], parseFloat(g[2]));
+    cmdGive(g[1], parseInt(g[2]), parseFloat(g[3]));
   } else if (r) {
     cmdRemove(r[1], parseInt(r[2]));
   } else if (u) {
@@ -1528,18 +1528,26 @@ function clearOwnerLogs() {
 
 // ...
 
-function cmdGive(email, pct) {
+function cmdGive(email, number, pct) {
   if (pct <= 0 || pct > 100) { clog("❌ Phần trăm phải từ 1 đến 100", "error"); return; }
   var ref = db.collection("vouchers").doc(email);
   ref.get().then(function(snap) {
     var items = snap.exists ? (snap.data().items || []) : [];
-    items.push({ id: String(Date.now()), percent: pct, used: false, usedAt: null, addedAt: Date.now() });
+    // Add multiple vouchers based on number parameter
+    for (var i = 0; i < number; i++) {
+      items.push({ 
+        id: String(Date.now() + i), 
+        percent: pct, 
+        used: false, 
+        usedAt: null, 
+        addedAt: Date.now() 
+      });
+    }
     return ref.set({ email: email, items: items }, { merge: true });
   }).then(function() {
-    clog("✅ Đã cấp voucher " + pct + "% cho " + email, "success");
-    logAction("GIVE", "Cấp voucher " + pct + "% cho " + email);
-    logCommand("/give " + email + " " + pct);
-    toast("Đã cấp voucher " + pct + "% cho " + email);
+    clog("✅ Đã cấp " + number + " voucher " + pct + "% cho " + email, "success");
+    logCommand("/give " + email + " " + number + " " + pct);
+    toast("Đã cấp " + number + " voucher " + pct + "% cho " + email);
   }).catch(function(e) { clog("❌ " + e.message, "error"); });
 }
 
