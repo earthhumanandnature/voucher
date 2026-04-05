@@ -104,6 +104,33 @@
   ::placeholder{color:var(--text3);}
   #cmd-send{background:var(--gold-dim);border:none;border-left:1px solid var(--border);color:var(--gold);padding:0 1.2rem;font-family:'DM Mono',monospace;font-size:0.78rem;cursor:pointer;transition:background 0.15s;white-space:nowrap;}
   #cmd-send:hover{background:rgba(240,192,96,0.22);}
+  
+  /* Command Autocomplete */
+  .cmd-autocomplete{
+    position:absolute;bottom:100%;left:0;right:0;
+    background:var(--surface);border:1px solid var(--border2);
+    border-radius:8px;margin-bottom:4px;max-height:200px;overflow-y:auto;
+    display:none;z-index:1002;box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  }
+  .cmd-autocomplete.show{display:block;}
+  .cmd-suggestion{
+    padding:0.6rem 1rem;display:flex;align-items:center;gap:8px;
+    cursor:pointer;transition:background 0.15s;border-bottom:1px solid var(--border);
+    font-family:'DM Mono',monospace;font-size:0.8rem;
+  }
+  .cmd-suggestion:last-child{border-bottom:none;}
+  .cmd-suggestion:hover{background:var(--surface2);}
+  .cmd-suggestion.selected{background:var(--gold-dim);color:var(--gold);}
+  .cmd-suggestion-cmd{color:var(--gold);font-weight:500;min-width:80px;}
+  .cmd-suggestion-desc{color:var(--text3);font-size:0.75rem;}
+  
+  /* Command Log Enhancements */
+  .cl.success{color:var(--green);}
+  .cl.warning{color:var(--gold);}
+  .cl.error{color:var(--red);}
+  .cl.info{color:var(--blue);}
+  .cl.command{color:var(--gold);font-weight:500;}
+  .cl.timestamp{color:var(--text3);font-size:0.7rem;margin-right:8px;}
 
   /* HELP */
   .help{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem 1.3rem;margin-top:1.5rem;font-family:'DM Mono',monospace;font-size:0.8rem;line-height:1.9;color:var(--text3);}
@@ -364,6 +391,7 @@
         <div class="cmd-log" id="cmd-log">
           <div class="cl inf">VoucherVault Owner Terminal — gõ lệnh bên dưới</div>
         </div>
+        <div class="cmd-autocomplete" id="cmd-autocomplete"></div>
         <div class="cmd-row">
           <div class="cprompt">$</div>
           <input type="text" id="cmd-input" placeholder="/give email voucher 20  |  /remove email voucher 1  |  /used email voucher 1" />
@@ -934,71 +962,363 @@ function renderUserVouchers(items) {
 
 /* ─── COMMANDS ─── */
 document.getElementById("cmd-send").addEventListener("click", runCmd);
-document.getElementById("cmd-input").addEventListener("keydown", function(e) { if (e.key === "Enter") runCmd(); });
+document.getElementById("cmd-input").addEventListener("keydown", function(e) { 
+  if (e.key === "Enter") runCmd(); 
+  if (e.key === "ArrowUp" || e.key === "ArrowDown") handleAutocompleteNav(e);
+  if (e.key === "Escape") hideAutocomplete();
+  if (e.key === "Tab") { e.preventDefault(); showAutocomplete(); }
+});
+
+document.getElementById("cmd-input").addEventListener("input", function(e) {
+  var value = this.value.trim();
+  if (value.length > 0) {
+    showAutocomplete();
+  } else {
+    hideAutocomplete();
+  }
+});
+
+// Command definitions with descriptions
+var commandDefinitions = [
+  { cmd: "/give", desc: "Cấp voucher giảm giá", params: "email voucher %" },
+  { cmd: "/remove", desc: "Xóa voucher theo STT", params: "email voucher STT" },
+  { cmd: "/used", desc: "Đánh dấu đã sử dụng", params: "email voucher STT" },
+  { cmd: "/help", desc: "Hiển thị help", params: "" },
+  { cmd: "/clear", desc: "Xóa log terminal", params: "" },
+  { cmd: "/stats", desc: "Hiển thị thống kê", params: "" },
+  { cmd: "/users", desc: "Danh sách người dùng", params: "" },
+  { cmd: "/search", desc: "Tìm kiếm voucher", params: "email" },
+  { cmd: "/export", desc: "Xuất dữ liệu", params: "format" }
+];
+
+var currentAutocompleteIndex = -1;
+var filteredCommands = [];
+
+function handleAutocompleteNav(e) {
+  var autocomplete = document.getElementById("cmd-autocomplete");
+  if (!autocomplete.classList.contains("show")) return;
+  
+  var suggestions = autocomplete.querySelectorAll(".cmd-suggestion");
+  if (suggestions.length === 0) return;
+  
+  // Remove previous selection
+  if (currentAutocompleteIndex >= 0) {
+    suggestions[currentAutocompleteIndex].classList.remove("selected");
+  }
+  
+  if (e.key === "ArrowUp") {
+    e.preventDefault();
+    currentAutocompleteIndex = currentAutocompleteIndex <= 0 ? suggestions.length - 1 : currentAutocompleteIndex - 1;
+  } else if (e.key === "ArrowDown") {
+    e.preventDefault();
+    currentAutocompleteIndex = currentAutocompleteIndex >= suggestions.length - 1 ? 0 : currentAutocompleteIndex + 1;
+  }
+  
+  suggestions[currentAutocompleteIndex].classList.add("selected");
+  var selectedCmd = suggestions[currentAutocompleteIndex].getAttribute("data-cmd");
+  document.getElementById("cmd-input").value = selectedCmd;
+}
+
+function showAutocomplete() {
+  var input = document.getElementById("cmd-input").value.trim();
+  var autocomplete = document.getElementById("cmd-autocomplete");
+  
+  if (input.length === 0) {
+    // Show all commands
+    filteredCommands = commandDefinitions.slice();
+  } else {
+    // Filter commands based on input
+    filteredCommands = commandDefinitions.filter(function(cmd) {
+      return cmd.cmd.toLowerCase().includes(input.toLowerCase());
+    });
+  }
+  
+  if (filteredCommands.length === 0) {
+    hideAutocomplete();
+    return;
+  }
+  
+  autocomplete.innerHTML = filteredCommands.map(function(cmd, index) {
+    return '<div class="cmd-suggestion" data-cmd="' + cmd.cmd + '" data-index="' + index + '">' +
+      '<span class="cmd-suggestion-cmd">' + cmd.cmd + '</span>' +
+      '<span class="cmd-suggestion-desc">' + cmd.desc + '</span>' +
+      '</div>';
+  }).join("");
+  
+  // Add click handlers
+  autocomplete.querySelectorAll(".cmd-suggestion").forEach(function(item) {
+    item.addEventListener("click", function() {
+      document.getElementById("cmd-input").value = this.getAttribute("data-cmd");
+      hideAutocomplete();
+      document.getElementById("cmd-input").focus();
+    });
+  });
+  
+  autocomplete.classList.add("show");
+  currentAutocompleteIndex = -1;
+}
+
+function hideAutocomplete() {
+  var autocomplete = document.getElementById("cmd-autocomplete");
+  autocomplete.classList.remove("show");
+  autocomplete.innerHTML = "";
+  currentAutocompleteIndex = -1;
+}
 
 function runCmd() {
   var inp = document.getElementById("cmd-input");
   var raw = inp.value.trim();
   if (!raw) return;
+  
+  // Log the command
+  logCommand(raw);
+  
   inp.value = "";
-  clog("> " + raw, "inf");
+  hideAutocomplete();
 
   var g = raw.match(/^\/give\s+(\S+)\s+voucher\s+(\d+(?:\.\d+)?)\s*$/i);
   var r = raw.match(/^\/remove\s+(\S+)\s+voucher\s+(\d+)\s*$/i);
   var u = raw.match(/^\/used\s+(\S+)\s+voucher\s+(\d+)\s*$/i);
+  var h = raw.match(/^\/help\s*$/i);
+  var c = raw.match(/^\/clear\s*$/i);
+  var s = raw.match(/^\/stats\s*$/i);
+  var us = raw.match(/^\/users\s*$/i);
+  var se = raw.match(/^\/search\s+(\S+)\s*$/i);
+  var ex = raw.match(/^\/export\s*(\w*)\s*$/i);
 
   if (g)      cmdGive(g[1], parseFloat(g[2]));
   else if (r) cmdRemove(r[1], parseInt(r[2]));
   else if (u) cmdUsed(u[1], parseInt(u[2]));
-  else        clog("❌ Lệnh không hợp lệ. Xem hướng dẫn bên dưới.", "err");
+  else if (h) cmdHelp();
+  else if (c) cmdClear();
+  else if (s) cmdStats();
+  else if (us) cmdUsers();
+  else if (se) cmdSearch(se[1]);
+  else if (ex) cmdExport(ex[1]);
+  else        clog("❌ Lệnh không hợp lệ. Gõ /help để xem danh sách lệnh.", "error");
+}
+
+function logCommand(command) {
+  var timestamp = new Date().toLocaleTimeString("vi-VN");
+  var logEntry = document.createElement("div");
+  logEntry.className = "cl command";
+  logEntry.innerHTML = '<span class="timestamp">[' + timestamp + ']</span> $ ' + command;
+  
+  var cmdLog = document.getElementById("cmd-log");
+  cmdLog.appendChild(logEntry);
+  cmdLog.scrollTop = cmdLog.scrollHeight;
 }
 
 function cmdGive(email, pct) {
-  if (pct <= 0 || pct > 100) { clog("❌ Phần trăm phải từ 1 đến 100", "err"); return; }
+  if (pct <= 0 || pct > 100) { clog("❌ Phần trăm phải từ 1 đến 100", "error"); return; }
   var ref = db.collection("vouchers").doc(email);
   ref.get().then(function(snap) {
     var items = snap.exists ? (snap.data().items || []) : [];
     items.push({ id: String(Date.now()), percent: pct, used: false, usedAt: null, addedAt: Date.now() });
     return ref.set({ email: email, items: items }, { merge: true });
   }).then(function() {
-    clog("✓ Đã cấp voucher " + pct + "% cho " + email, "ok");
+    clog("✅ Đã cấp voucher " + pct + "% cho " + email, "success");
+    logAction("GIVE", "Cấp voucher " + pct + "% cho " + email);
     toast("Đã cấp voucher " + pct + "% cho " + email);
-  }).catch(function(e) { clog("❌ " + e.message, "err"); });
+  }).catch(function(e) { clog("❌ " + e.message, "error"); });
 }
 
 function cmdRemove(email, idx) {
   var ref = db.collection("vouchers").doc(email);
   ref.get().then(function(snap) {
-    if (!snap.exists) { clog("❌ Không tìm thấy: " + email, "err"); return Promise.reject("skip"); }
+    if (!snap.exists) { clog("❌ Không tìm thấy: " + email, "error"); return Promise.reject("skip"); }
     var items = snap.data().items || [];
-    if (idx < 1 || idx > items.length) { clog("❌ STT #"+idx+" không tồn tại. Có "+items.length+" voucher.", "err"); return Promise.reject("skip"); }
+    if (idx < 1 || idx > items.length) { clog("❌ STT #"+idx+" không tồn tại. Có "+items.length+" voucher.", "error"); return Promise.reject("skip"); }
     var pct = items[idx-1].percent;
     items.splice(idx-1, 1);
     return ref.update({ items: items }).then(function() {
-      clog("✓ Đã xóa voucher #"+idx+" ("+pct+"%) của "+email, "ok");
+      clog("✅ Đã xóa voucher #"+idx+" ("+pct+"%) của "+email, "success");
+      logAction("REMOVE", "Xóa voucher #"+idx+" ("+pct+"%) của "+email);
       toast("Đã xóa voucher #"+idx+" của "+email);
     });
-  }).catch(function(e) { if (e !== "skip") clog("❌ " + e.message, "err"); });
+  }).catch(function(e) { if (e !== "skip") clog("❌ " + e.message, "error"); });
 }
 
 function cmdUsed(email, idx) {
   var ref = db.collection("vouchers").doc(email);
   ref.get().then(function(snap) {
-    if (!snap.exists) { clog("❌ Không tìm thấy: " + email, "err"); return Promise.reject("skip"); }
+    if (!snap.exists) { clog("❌ Không tìm thấy: " + email, "error"); return Promise.reject("skip"); }
     var items = snap.data().items || [];
-    if (idx < 1 || idx > items.length) { clog("❌ STT #"+idx+" không tồn tại. Có "+items.length+" voucher.", "err"); return Promise.reject("skip"); }
-    if (items[idx-1].used) { clog("⚠️ Voucher #"+idx+" của "+email+" đã được dùng trước đó.", "err"); return Promise.reject("skip"); }
+    if (idx < 1 || idx > items.length) { clog("❌ STT #"+idx+" không tồn tại. Có "+items.length+" voucher.", "error"); return Promise.reject("skip"); }
+    if (items[idx-1].used) { clog("⚠️ Voucher #"+idx+" của "+email+" đã được dùng trước đó.", "warning"); return Promise.reject("skip"); }
     var pct = items[idx-1].percent;
     items[idx-1].used  = true;
     items[idx-1].usedAt = Date.now();
     return ref.update({ items: items }).then(function() {
-      clog("✓ Đã đánh dấu voucher #"+idx+" ("+pct+"%) của "+email+" là đã sử dụng", "ok");
+      clog("✅ Đã đánh dấu voucher #"+idx+" ("+pct+"%) của "+email+" là đã sử dụng", "success");
+      logAction("USED", "Đánh dấu voucher #"+idx+" ("+pct+"%) của "+email+" đã sử dụng");
       toast("Voucher #"+idx+" của "+email+" đã được dùng");
     });
-  }).catch(function(e) { if (e !== "skip") clog("❌ " + e.message, "err"); });
+  }).catch(function(e) { if (e !== "skip") clog("❌ " + e.message, "error"); });
 }
 
-/* ─── HELPERS ─── */
+function cmdHelp() {
+  clog("📋 Danh sách lệnh:", "info");
+  clog("  /give <email> voucher <%> - Cấp voucher giảm giá", "command");
+  clog("  /remove <email> voucher <STT> - Xóa voucher theo số thứ tự", "command");
+  clog("  /used <email> voucher <STT> - Đánh dấu voucher là đã sử dụng", "command");
+  clog("  /help - Hiển thị help này", "command");
+  clog("  /clear - Xóa log terminal", "command");
+  clog("  /stats - Hiển thị thống kê hệ thống", "command");
+  clog("  /users - Hiển thị danh sách người dùng", "command");
+  clog("  /search <email> - Tìm kiếm voucher của user", "command");
+  clog("  /export [format] - Xuất dữ liệu (json/csv)", "command");
+  logAction("HELP", "Hiển thị danh sách lệnh");
+}
+
+function cmdClear() {
+  var cmdLog = document.getElementById("cmd-log");
+  cmdLog.innerHTML = '<div class="cl inf">VoucherVault Owner Terminal — gõ lệnh bên dưới</div>';
+  clog("🧹 Terminal đã được xóa", "success");
+  logAction("CLEAR", "Xóa terminal log");
+}
+
+function cmdStats() {
+  var total = allVouchers.length;
+  var used = allVouchers.filter(function(v) { return v.used; }).length;
+  var active = total - used;
+  var uniq = new Set(allVouchers.map(function(v) { return v.userEmail; })).size;
+  
+  clog("📊 Thống kê hệ thống:", "info");
+  clog("  Tổng voucher: " + total, "command");
+  clog("  Đã sử dụng: " + used, "command");
+  clog("  Còn hiệu lực: " + active, "command");
+  clog("  Người dùng: " + uniq, "command");
+  logAction("STATS", "Xem thống kê hệ thống");
+}
+
+function cmdUsers() {
+  if (allUsers.length === 0) {
+    clog("👥 Chưa có người dùng nào", "warning");
+    return;
+  }
+  
+  clog("👥 Danh sách người dùng (" + allUsers.length + "):", "info");
+  allUsers.slice(0, 10).forEach(function(user, i) {
+    var status = user.isOnline ? "🟢 Online" : "⚫ Offline";
+    var vouchers = user.voucherCount || 0;
+    clog("  " + (i+1) + ". " + user.email + " | " + vouchers + " voucher | " + status, "command");
+  });
+  
+  if (allUsers.length > 10) {
+    clog("  ... và " + (allUsers.length - 10) + " người dùng khác", "command");
+  }
+  
+  logAction("USERS", "Xem danh sách người dùng");
+}
+
+function cmdSearch(email) {
+  var ref = db.collection("vouchers").doc(email);
+  ref.get().then(function(snap) {
+    if (!snap.exists) {
+      clog("❌ Không tìm thấy user: " + email, "error");
+      return;
+    }
+    
+    var items = snap.data().items || [];
+    if (items.length === 0) {
+      clog("📭 " + email + " không có voucher nào", "warning");
+      return;
+    }
+    
+    clog("🔍 Voucher của " + email + " (" + items.length + "):", "info");
+    items.forEach(function(v, i) {
+      var status = v.used ? "🔴 Đã dùng" : "🟢 Còn hiệu lực";
+      var usedDate = v.usedAt ? " [" + new Date(v.usedAt).toLocaleDateString("vi-VN") + "]" : "";
+      clog("  " + (i+1) + ". " + v.percent + "% " + status + usedDate, "command");
+    });
+    
+    logAction("SEARCH", "Tìm kiếm voucher của " + email);
+  }).catch(function(e) { clog("❌ " + e.message, "error"); });
+}
+
+function cmdExport(format) {
+  format = format || "json";
+  
+  if (format !== "json" && format !== "csv") {
+    clog("❌ Format không hợp lệ. Chỉ hỗ trợ: json, csv", "error");
+    return;
+  }
+  
+  var exportData = {
+    timestamp: new Date().toISOString(),
+    totalVouchers: allVouchers.length,
+    totalUsers: allUsers.length,
+    vouchers: allVouchers,
+    users: allUsers
+  };
+  
+  if (format === "json") {
+    var jsonData = JSON.stringify(exportData, null, 2);
+    clog("📄 JSON Export (" + jsonData.length + " bytes):", "info");
+    clog(jsonData.substring(0, 200) + "...", "command");
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(jsonData).then(function() {
+      clog("✅ Đã copy JSON vào clipboard", "success");
+    }).catch(function() {
+      clog("⚠️ Không thể copy vào clipboard", "warning");
+    });
+  } else if (format === "csv") {
+    var csvData = generateCSV(exportData);
+    clog("📄 CSV Export (" + csvData.length + " bytes):", "info");
+    clog(csvData.substring(0, 200) + "...", "command");
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(csvData).then(function() {
+      clog("✅ Đã copy CSV vào clipboard", "success");
+    }).catch(function() {
+      clog("⚠️ Không thể copy vào clipboard", "warning");
+    });
+  }
+  
+  logAction("EXPORT", "Xuất dữ liệu format " + format);
+}
+
+function generateCSV(data) {
+  var csv = "Timestamp,Email,Voucher ID,Percent,Status,Added At,Used At\n";
+  
+  data.vouchers.forEach(function(v) {
+    csv += [
+      new Date(v.addedAt).toISOString(),
+      v.userEmail,
+      v.id,
+      v.percent + "%",
+      v.used ? "Used" : "Active",
+      new Date(v.addedAt).toISOString(),
+      v.usedAt ? new Date(v.usedAt).toISOString() : ""
+    ].join(",") + "\n";
+  });
+  
+  return csv;
+}
+
+function logAction(action, details) {
+  var timestamp = new Date().toISOString();
+  var logEntry = {
+    timestamp: timestamp,
+    action: action,
+    details: details,
+    user: currentUser ? currentUser.email : "unknown"
+  };
+  
+  // Store in localStorage for persistence
+  var actionLogs = JSON.parse(localStorage.getItem("ownerActionLogs") || "[]");
+  actionLogs.push(logEntry);
+  
+  // Keep only last 1000 entries
+  if (actionLogs.length > 1000) {
+    actionLogs = actionLogs.slice(-1000);
+  }
+  
+  localStorage.setItem("ownerActionLogs", JSON.stringify(actionLogs));
+}
+
 function clog(msg, cls) {
   var log  = document.getElementById("cmd-log");
   var d = document.createElement("div");
