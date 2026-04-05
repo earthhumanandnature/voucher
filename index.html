@@ -205,6 +205,37 @@
     font-family:'DM Sans',sans-serif;font-size:0.85rem;outline:none;
   }
   .youtube-search:focus{border-color:var(--gold);}
+  
+  .youtube-search-results{
+    position:absolute;top:100%;left:0;right:0;
+    background:var(--surface);border:1px solid var(--border2);
+    border-radius:8px;margin-top:4px;max-height:300px;overflow-y:auto;
+    display:none;z-index:1001;box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  }
+  .youtube-search-results.show{display:block;}
+  .youtube-result-item{
+    padding:0.8rem 1rem;display:flex;align-items:center;gap:12px;
+    cursor:pointer;transition:background 0.15s;border-bottom:1px solid var(--border);
+  }
+  .youtube-result-item:last-child{border-bottom:none;}
+  .youtube-result-item:hover{background:var(--surface2);}
+  .youtube-result-thumbnail{
+    width:60px;height:45px;border-radius:4px;background:var(--surface);
+    display:flex;align-items:center;justify-content:center;color:var(--text3);
+    font-size:0.7rem;font-family:'DM Mono',monospace;flex-shrink:0;
+  }
+  .youtube-result-info{
+    flex:1;min-width:0;
+  }
+  .youtube-result-title{
+    font-family:'DM Sans',sans-serif;font-size:0.85rem;
+    font-weight:500;color:var(--text);margin-bottom:2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .youtube-result-meta{
+    font-family:'DM Mono',monospace;font-size:0.7rem;
+    color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
   .youtube-controls{display:flex;gap:6px;}
   .youtube-btn-small{
     background:none;border:none;color:var(--text3);cursor:pointer;
@@ -963,15 +994,82 @@ function extractVideoId(url) {
 }
 
 function searchYouTube(query) {
-  // Simple YouTube search using YouTube Data API (you'll need to set up API key)
-  // For demo purposes, we'll use a mock search
   toast("🔍 Đang tìm kiếm: " + query);
   
-  // Mock search results - in production, use YouTube Data API
-  setTimeout(function() {
-    var mockVideoId = "dQw4w9WgXcQ"; // Rick roll video as default
-    loadVideo(mockVideoId);
-  }, 1000);
+  // Mock YouTube search results with realistic data
+  var mockResults = [
+    { id: "dQw4w9WgXcQ", title: "Never Gonna Give You Up", channel: "Rick Astley", views: "1.4B views" },
+    { id: "9bZkp7q19f0", title: "Gangnam Style", channel: "PSY", views: "4.7B views" },
+    { id: "kJQP7kiw5Fk", title: "Luis Fonsi - Despacito", channel: "Luis Fonsi", views: "8.2B views" },
+    { id: "RgKAFK5djSk", title: "Mark Ronson - Uptown Funk", channel: "Mark Ronson", views: "4.6B views" },
+    { id: "kTJczUoc26U", title: "Shape of You", channel: "Ed Sheeran", views: "5.9B views" },
+    { id: "hTWKbfoikeg", title: "John Legend - All of Me", channel: "John Legend", views: "2.5B views" },
+    { id: "fRh_vgS2D8U", title: "Clean Bandit - Rockabye", channel: "Clean Bandit", views: "2.1B views" },
+    { id: "09R8_2nJtjg", title: "Maroon 5 - Sugar", channel: "Maroon 5", views: "3.6B views" },
+    { id: "pRpeEdMmmQ0", title: "Major Lazer - Lean On", channel: "Major Lazer", views: "3.3B views" },
+    { id: "l3wh2T8Aq1g", title: "Wiz Khalifa - See You Again", channel: "Wiz Khalifa", views: "5.6B views" }
+  ];
+  
+  // Filter results based on query (simple text matching)
+  var filteredResults = mockResults.filter(function(video) {
+    var searchTerm = query.toLowerCase();
+    return video.title.toLowerCase().includes(searchTerm) || 
+           video.channel.toLowerCase().includes(searchTerm);
+  });
+  
+  // If no matches, return all results
+  if (filteredResults.length === 0) {
+    filteredResults = mockResults.slice(0, 10);
+  } else {
+    filteredResults = filteredResults.slice(0, 10);
+  }
+  
+  displaySearchResults(filteredResults);
+}
+
+function displaySearchResults(results) {
+  var resultsContainer = document.getElementById("youtube-search-results");
+  if (!resultsContainer) return;
+  
+  if (results.length === 0) {
+    resultsContainer.innerHTML = '<div class="youtube-result-item"><div class="youtube-result-info">Không tìm thấy kết quả</div></div>';
+  } else {
+    resultsContainer.innerHTML = results.map(function(video, index) {
+      return '<div class="youtube-result-item" data-video-id="' + video.id + '" data-title="' + video.title + '" data-channel="' + video.channel + '">' +
+        '<div class="youtube-result-thumbnail">' + (index + 1) + '</div>' +
+        '<div class="youtube-result-info">' +
+          '<div class="youtube-result-title">' + video.title + '</div>' +
+          '<div class="youtube-result-meta">' + video.channel + ' · ' + video.views + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    
+    // Add click handlers to result items
+    resultsContainer.querySelectorAll('.youtube-result-item').forEach(function(item) {
+      item.addEventListener('click', function() {
+        var videoId = this.getAttribute('data-video-id');
+        var title = this.getAttribute('data-title');
+        var channel = this.getAttribute('data-channel');
+        
+        loadVideo(videoId);
+        updateVideoInfo(title, channel);
+        hideSearchResults();
+        
+        // Clear search input
+        var searchInput = document.getElementById("youtube-search");
+        if (searchInput) searchInput.value = title;
+      });
+    });
+  }
+  
+  resultsContainer.classList.add('show');
+}
+
+function hideSearchResults() {
+  var resultsContainer = document.getElementById("youtube-search-results");
+  if (resultsContainer) {
+    resultsContainer.classList.remove('show');
+  }
 }
 
 function loadVideo(videoId) {
@@ -1082,6 +1180,21 @@ document.addEventListener("DOMContentLoaded", function() {
   // YouTube search handler
   var searchInput = document.getElementById("youtube-search");
   if (searchInput) {
+    var searchTimeout;
+    
+    searchInput.addEventListener("input", function(e) {
+      var query = this.value.trim();
+      clearTimeout(searchTimeout);
+      
+      if (query.length >= 2) {
+        searchTimeout = setTimeout(function() {
+          searchYouTube(query);
+        }, 300); // Debounce search
+      } else {
+        hideSearchResults();
+      }
+    });
+    
     searchInput.addEventListener("keydown", function(e) {
       if (e.key === "Enter") {
         var query = this.value.trim();
@@ -1090,6 +1203,7 @@ document.addEventListener("DOMContentLoaded", function() {
             var videoId = extractVideoId(query);
             if (videoId) {
               loadVideo(videoId);
+              hideSearchResults();
             } else {
               toast("❌ Link YouTube không hợp lệ");
             }
@@ -1097,6 +1211,16 @@ document.addEventListener("DOMContentLoaded", function() {
             searchYouTube(query);
           }
         }
+      } else if (e.key === "Escape") {
+        hideSearchResults();
+        this.blur();
+      }
+    });
+    
+    // Hide results when clicking outside
+    document.addEventListener("click", function(e) {
+      if (!e.target.closest(".youtube-header")) {
+        hideSearchResults();
       }
     });
   }
@@ -1111,8 +1235,9 @@ document.addEventListener("DOMContentLoaded", function() {
 </button>
 
 <div id="youtube-mini">
-  <div class="youtube-header">
+  <div class="youtube-header" style="position:relative;">
     <input type="text" class="youtube-search" id="youtube-search" placeholder="Tìm video hoặc dán link...">
+    <div class="youtube-search-results" id="youtube-search-results"></div>
     <div class="youtube-controls">
       <button class="youtube-btn-small" id="youtube-minimize" title="Thu nhỏ">━</button>
       <button class="youtube-btn-small" id="youtube-close" title="Đóng">✕</button>
