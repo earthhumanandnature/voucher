@@ -1394,23 +1394,31 @@ function showAutocomplete() {
   }
   
   autocomplete.innerHTML = suggestions.map(function(suggestion, index) {
-    var suggestionClass = suggestion.type === "email" ? "email-suggestion" : 
-                         suggestion.type === "number" ? "number-suggestion" : 
-                         suggestion.type === "percentage" ? "percentage-suggestion" : "cmd-suggestion";
+    var suggestionType = suggestion.type || "cmd";
+    console.log("Processing suggestion:", { type: suggestionType, suggestion: suggestion }); // Debug
     
-    return '<div class="' + suggestionClass + '" data-type="' + suggestion.type + '" data-value="' + suggestion.value + '" data-index="' + index + '">' +
+    var suggestionClass = suggestionType === "email" ? "email-suggestion" : 
+                         suggestionType === "number" ? "number-suggestion" : 
+                         suggestionType === "percentage" ? "percentage-suggestion" : "cmd-suggestion";
+    
+    return '<div class="' + suggestionClass + '" data-type="' + suggestionType + '" data-value="' + suggestion.value + '" data-index="' + index + '">' +
       '<span class="suggestion-display">' + suggestion.display + '</span>' +
       '<span class="suggestion-desc">' + suggestion.desc + '</span>' +
       '</div>';
   }).join("");
   
-  // Add click handlers
-  autocomplete.querySelectorAll(".cmd-suggestion, .email-suggestion, .number-suggestion, .percentage-suggestion").forEach(function(item) {
+  // Add click handlers - Fix "unfound" error
+  var allSuggestions = autocomplete.querySelectorAll(".cmd-suggestion, .email-suggestion, .number-suggestion, .percentage-suggestion");
+  console.log("Found suggestion elements:", allSuggestions.length); // Debug
+  
+  allSuggestions.forEach(function(item) {
     item.addEventListener("click", function() {
       var type = this.getAttribute("data-type");
       var value = this.getAttribute("data-value");
       var currentInput = input.value.trim();
       var tokens = currentInput.split(/\s+/);
+      
+      console.log("Clicked suggestion:", { type: type, value: value, currentInput: currentInput, tokens: tokens }); // Debug
       
       if (type === "email") {
         tokens[0] = value;
