@@ -116,23 +116,44 @@
     visibility: visible !important;
     opacity: 1 !important;
   }
-  
-  .suggestion-item{
+  .cmd-suggestion{
     padding:0.6rem 1rem;display:flex;align-items:center;gap:8px;
     cursor:pointer;transition:background 0.15s;border-bottom:1px solid var(--border);
     font-family:'DM Mono',monospace;font-size:0.8rem;
   }
-  .suggestion-item:last-child{border-bottom:none;}
-  .suggestion-item:hover{background:var(--surface2);}
-  .suggestion-item.selected{background:var(--gold-dim);color:var(--gold);}
+  .cmd-suggestion:last-child{border-bottom:none;}
+  .cmd-suggestion:hover{background:var(--surface2);}
+  .cmd-suggestion.selected{background:var(--gold-dim);color:var(--gold);}
+  .cmd-suggestion-cmd{color:var(--gold);font-weight:500;min-width:80px;}
+  .cmd-suggestion-desc{color:var(--text3);font-size:0.75rem;}
   
-  .suggestion-text{font-weight:500;}
+  .email-suggestion{padding:0.6rem 1rem;display:flex;align-items:center;gap:8px;cursor:pointer;transition:background 0.15s;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:0.8rem;}
+  .email-suggestion:last-child{border-bottom:none;}
+  .email-suggestion:hover{background:var(--surface2);}
+  .email-suggestion.selected{background:var(--gold-dim);color:var(--gold);}
+  .suggestion-display{color:var(--gold);font-weight:500;min-width:120px;}
   .suggestion-desc{color:var(--text3);font-size:0.7rem;}
   
-  .suggestion-item.cmd .suggestion-text{color:var(--gold);}
-  .suggestion-item.email .suggestion-text{color:var(--cyan);}
-  .suggestion-item.number .suggestion-text{color:var(--green);}
-  .suggestion-item.percentage .suggestion-text{color:var(--orange);}
+  .number-suggestion{padding:0.6rem 1rem;display:flex;align-items:center;gap:8px;cursor:pointer;transition:background 0.15s;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:0.8rem;}
+  .number-suggestion:last-child{border-bottom:none;}
+  .number-suggestion:hover{background:var(--surface2);}
+  .number-suggestion.selected{background:var(--gold-dim);color:var(--gold);}
+  .suggestion-display{color:var(--cyan);font-weight:500;min-width:60px;}
+  .suggestion-desc{color:var(--text3);font-size:0.7rem;}
+  
+  .percentage-suggestion{padding:0.6rem 1rem;display:flex;align-items:center;gap:8px;cursor:pointer;transition:background 0.15s;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:0.8rem;}
+  .percentage-suggestion:last-child{border-bottom:none;}
+  .percentage-suggestion:hover{background:var(--surface2);}
+  .percentage-suggestion.selected{background:var(--gold-dim);color:var(--gold);}
+  .suggestion-display{color:var(--green);font-weight:500;min-width:50px;}
+  .suggestion-desc{color:var(--text3);font-size:0.7rem;}
+  
+  .keyword-suggestion{padding:0.6rem 1rem;display:flex;align-items:center;gap:8px;cursor:pointer;transition:background 0.15s;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:0.8rem;}
+  .keyword-suggestion:last-child{border-bottom:none;}
+  .keyword-suggestion:hover{background:var(--surface2);}
+  .keyword-suggestion.selected{background:var(--gold-dim);color:var(--gold);}
+  .keyword-suggestion .suggestion-display{color:var(--orange);font-weight:500;min-width:80px;}
+  .keyword-suggestion .suggestion-desc{color:var(--text3);font-size:0.7rem;}
   
   /* Command Log Enhancements */
   .cl.success{color:var(--green);}
@@ -714,11 +735,9 @@ function renderOwner() {
       return '<tr><td style="color:var(--text3);font-size:0.78rem;font-family:\'DM Mono\',monospace">'+(i+1)+'</td><td class="ec">'+v.userEmail+'</td><td><span class="upill">'+v.percent+'%</span></td><td style="color:var(--text3);font-size:0.8rem;font-family:\'DM Mono\',monospace">'+date+'</td></tr>';
     }).join("");
   }
-
-  // Update dashboard when voucher data changes
-  if (isOwner) {
-    updateDashboardStats();
-  }
+  
+  // Update email suggestions when vouchers are rendered
+  updateSuggestions();
 }
 
 function sc(label, val, style) {
@@ -880,6 +899,9 @@ function renderUsers(filter) {
       + '<span class="'+badgeCls+'">'+badgeTxt+'</span>'
       + '</div>';
   }).join("");
+  
+  // Update email suggestions when users are rendered
+  updateSuggestions();
 }
 
 /* ─── USER SEARCH ─── */
@@ -1258,15 +1280,40 @@ var commandDefinitions = [
   { cmd: "/export", desc: "Xuất dữ liệu", params: "format" }
 ];
 
-// Email suggestions for autocomplete
-var emailSuggestions = [
-  "user@example.com",
-  "test@gmail.com", 
-  "admin@domain.com",
-  "support@company.com"
-];
+// Email suggestions from real users in the system
+var emailSuggestions = [];
 
-console.log("Email suggestions loaded:", emailSuggestions); // Debug
+// Function to update email suggestions from real users
+function updateEmailSuggestions() {
+  emailSuggestions = [];
+  
+  // Get emails from allUsers array
+  if (allUsers && allUsers.length > 0) {
+    allUsers.forEach(function(user) {
+      if (user.email && emailSuggestions.indexOf(user.email) === -1) {
+        emailSuggestions.push(user.email);
+      }
+    });
+  }
+  
+  // Also add emails from allVouchers
+  if (allVouchers && allVouchers.length > 0) {
+    allVouchers.forEach(function(voucher) {
+      if (voucher.userEmail && emailSuggestions.indexOf(voucher.userEmail) === -1) {
+        emailSuggestions.push(voucher.userEmail);
+      }
+    });
+  }
+  
+  console.log("Updated email suggestions from real users:", emailSuggestions); // Debug
+}
+
+// Update suggestions when users or vouchers change
+function updateSuggestions() {
+  updateEmailSuggestions();
+}
+
+console.log("Email suggestions system initialized"); // Debug
 
 // Voucher number suggestions
 var voucherNumberSuggestions = ["1", "2", "3", "5", "10", "15", "20", "25", "30", "50", "75", "100"];
@@ -1306,97 +1353,186 @@ function showAutocomplete() {
   var input = document.getElementById("cmd-input");
   var autocomplete = document.getElementById("cmd-autocomplete");
   
-  if (!input || !autocomplete) return;
+  console.log("showAutocomplete called with input:", input?.value); // Debug
+  console.log("Autocomplete element:", autocomplete); // Debug
   
-  var value = input.value.trim();
-  var parts = value.split(/\s+/);
-  var currentPart = parts[parts.length - 1] || "";
+  if (!input || !autocomplete) {
+    console.error("Missing elements:", { input: !!input, autocomplete: !!autocomplete });
+    return;
+  }
+  
+  var inputValue = input.value.trim();
+  var tokens = inputValue.split(/\s+/);
+  var currentToken = tokens[tokens.length - 1] || "";
+  var command = tokens[0] || "";
+  
+  // Fix: If currentToken is a command (starts with /), treat as command selection
+  if (currentToken.startsWith("/") && tokens.length === 1) {
+    command = currentToken;
+    currentToken = "";
+  }
+  // If we have a command and space after it, show parameter suggestions
+  else if (command.startsWith("/") && tokens.length > 1) {
+    // Show parameter suggestions based on command
+  }
+  
+  console.log("Parsed tokens:", { tokens: tokens, currentToken: currentToken, command: command }); // Debug
   
   var suggestions = [];
   
-  // Command level
-  if (parts.length === 1 && (value === "" || value.startsWith("/"))) {
-    suggestions = commandDefinitions
-      .filter(cmd => cmd.cmd.toLowerCase().includes(value.toLowerCase()))
-      .map(cmd => ({
-        type: 'cmd',
-        text: cmd.cmd,
-        desc: cmd.desc,
-        action: () => {
-          input.value = cmd.cmd + ' ';
-          input.focus();
-          setTimeout(showAutocomplete, 50);
-        }
-      }));
+  // If no command yet or typing command, show commands
+  if (!command || (command.startsWith("/") && tokens.length === 1)) {
+    suggestions = commandDefinitions.filter(function(cmd) {
+      return cmd.cmd.toLowerCase().includes(command.toLowerCase());
+    }).map(function(cmd) {
+      return { type: "cmd", value: cmd.cmd, display: cmd.cmd, desc: cmd.desc };
+    });
   }
-  // Email level for /give
-  else if (parts[0] === '/give' && parts.length === 2) {
-    suggestions = emailSuggestions
-      .filter(email => email.toLowerCase().includes(currentPart.toLowerCase()))
-      .map(email => ({
-        type: 'email',
-        text: email,
-        desc: 'Email address',
-        action: () => {
-          parts[1] = email;
-          input.value = parts.join(' ') + ' ';
-          input.focus();
-          setTimeout(showAutocomplete, 50);
-        }
-      }));
+  // If command exists and we have space, show suggestions for parameters
+  else if (command === "/give" && tokens.length > 1) {
+    console.log("Processing /give command with tokens:", tokens); // Debug
+    if (tokens.length === 2) {
+      console.log("Showing email suggestions for token:", currentToken); // Debug
+      // Show email suggestions - only if currentToken is empty or partial email
+      if (!currentToken || currentToken === "" || currentToken.includes("@")) {
+        suggestions = emailSuggestions.filter(function(email) {
+          return email.toLowerCase().includes(currentToken.toLowerCase());
+        }).map(function(email) {
+          return { type: "email", value: email, display: email, desc: "Email suggestion" };
+        });
+      } else {
+        // Show "voucher" keyword suggestion
+        suggestions = [{ type: "keyword", value: "voucher", display: "voucher", desc: "Type 'voucher' to continue" }];
+      }
+      console.log("Email suggestions generated:", suggestions); // Debug
+    } else if (tokens.length === 3) {
+      if (currentToken.toLowerCase() === "voucher") {
+        console.log("Showing voucher number suggestions"); // Debug
+        // Show voucher number suggestions
+        suggestions = voucherNumberSuggestions.map(function(num) {
+          return { type: "number", value: num, display: num, desc: "Voucher #" + num };
+        });
+      } else {
+        // Show "voucher" keyword suggestion
+        suggestions = [{ type: "keyword", value: "voucher", display: "voucher", desc: "Type 'voucher' to continue" }];
+      }
+    } else if (tokens.length === 4) {
+      if (currentToken.match(/^\d*$/)) {
+        console.log("Showing percentage suggestions for token:", currentToken); // Debug
+        // Show percentage suggestions
+        suggestions = percentageSuggestions.map(function(pct) {
+          return { type: "percentage", value: pct, display: pct + "%", desc: "Discount " + pct + "%" };
+        });
+      }
+    } else {
+      console.log("No suggestions for tokens length:", tokens.length, "currentToken:", currentToken); // Debug
+    }
+  } else if ((command === "/remove" || command === "/used") && tokens.length > 1) {
+    if (tokens.length === 2) {
+      // Show email suggestions
+      suggestions = emailSuggestions.filter(function(email) {
+        return email.toLowerCase().includes(currentToken.toLowerCase());
+      }).map(function(email) {
+        return { type: "email", value: email, display: email, desc: "Email suggestion" };
+      });
+    } else if (tokens.length === 3 && currentToken.toLowerCase() === "voucher") {
+      // Show voucher number suggestions
+      suggestions = voucherNumberSuggestions.map(function(num) {
+        return { type: "number", value: num, display: num, desc: "Voucher #" + num };
+      });
+    }
+  } else if (command === "/search" && tokens.length > 1) {
+    if (tokens.length === 2) {
+      // Show email suggestions
+      suggestions = emailSuggestions.filter(function(email) {
+        return email.toLowerCase().includes(currentToken.toLowerCase());
+      }).map(function(email) {
+        return { type: "email", value: email, display: email, desc: "Email suggestion" };
+      });
+    }
   }
-  // Voucher level for /give
-  else if (parts[0] === '/give' && parts.length === 3 && parts[2] === 'voucher') {
-    suggestions = voucherNumberSuggestions
-      .map(num => ({
-        type: 'number',
-        text: num,
-        desc: 'Voucher #' + num,
-        action: () => {
-          parts[2] = num;
-          input.value = parts.join(' ') + ' ';
-          input.focus();
-          setTimeout(showAutocomplete, 50);
-        }
-      }));
-  }
-  // Percentage level for /give
-  else if (parts[0] === '/give' && parts.length === 4) {
-    suggestions = percentageSuggestions
-      .map(pct => ({
-        type: 'percentage',
-        text: pct + '%',
-        desc: pct + '% discount',
-        action: () => {
-          parts[3] = pct;
-          input.value = parts.join(' ');
-          input.focus();
-          hideAutocomplete();
-        }
-      }));
-  }
+  
+  console.log("Generated suggestions:", suggestions); // Debug
   
   if (suggestions.length === 0) {
     hideAutocomplete();
     return;
   }
   
-  // Render suggestions
-  autocomplete.innerHTML = suggestions.map((s, i) => `
-    <div class="suggestion-item ${s.type}" data-index="${i}">
-      <span class="suggestion-text">${s.text}</span>
-      <span class="suggestion-desc">${s.desc}</span>
-    </div>
-  `).join('');
+  autocomplete.innerHTML = suggestions.map(function(suggestion, index) {
+    var suggestionType = suggestion.type || "cmd";
+    console.log("Processing suggestion:", { type: suggestionType, suggestion: suggestion }); // Debug
+    
+    var suggestionClass = suggestionType === "email" ? "email-suggestion" : 
+                         suggestionType === "number" ? "number-suggestion" : 
+                         suggestionType === "percentage" ? "percentage-suggestion" : 
+                         suggestionType === "keyword" ? "keyword-suggestion" : "cmd-suggestion";
+    
+    return '<div class="' + suggestionClass + '" data-type="' + suggestionType + '" data-value="' + suggestion.value + '" data-index="' + index + '">' +
+      '<span class="suggestion-display">' + suggestion.display + '</span>' +
+      '<span class="suggestion-desc">' + suggestion.desc + '</span>' +
+      '</div>';
+  }).join("");
   
-  // Add click handlers
-  autocomplete.querySelectorAll('.suggestion-item').forEach((item, i) => {
-    item.onclick = () => suggestions[i].action();
+  // Add click handlers - Fix "unfound" error
+  var allSuggestions = autocomplete.querySelectorAll(".cmd-suggestion, .email-suggestion, .number-suggestion, .percentage-suggestion, .keyword-suggestion");
+  console.log("Found suggestion elements:", allSuggestions.length); // Debug
+  
+  allSuggestions.forEach(function(item) {
+    item.addEventListener("click", function() {
+      var type = this.getAttribute("data-type");
+      var value = this.getAttribute("data-value");
+      var currentInput = input.value.trim();
+      var tokens = currentInput.split(/\s+/);
+      
+      console.log("Clicked suggestion:", { type: type, value: value, currentInput: currentInput, tokens: tokens }); // Debug
+      
+      if (type === "email") {
+        tokens[1] = value; // Replace email token
+      } else if (type === "number") {
+        tokens[tokens.length - 1] = value; // Replace current token
+      } else if (type === "percentage") {
+        tokens[tokens.length - 1] = value; // Replace current token
+      } else if (type === "cmd") {
+        tokens[0] = value; // Replace command
+        // Add space after command if not present
+        if (currentInput && !currentInput.endsWith(" ")) {
+          tokens.push("");
+        }
+      }
+      
+      input.value = tokens.join(" ");
+      hideAutocomplete();
+      input.focus();
+      
+      // Auto-continue to next parameter
+      setTimeout(function() {
+        showAutocomplete();
+      }, 100);
+    });
   });
   
-  // Show autocomplete
+  autocomplete.classList.add("show");
   autocomplete.style.display = 'block';
-  autocomplete.classList.add('show');
+  autocomplete.style.visibility = 'visible';
+  autocomplete.style.opacity = '1';
+  currentAutocompleteIndex = -1;
+  
+  // Debug computed styles - Fix "computed is not defined" error
+  try {
+    var computed = window.getComputedStyle(autocomplete);
+    console.log("Autocomplete shown - computed styles:", {
+      display: computed.display,
+      visibility: computed.visibility,
+      opacity: computed.opacity,
+      zIndex: computed.zIndex,
+      height: computed.height,
+      offsetHeight: autocomplete.offsetHeight
+    });
+  } catch (e) {
+    console.log("getComputedStyle error:", e.message);
+  }
+  console.log("Autocomplete shown, classes:", autocomplete.className); // Debug
 }
 
 function hideAutocomplete() {
