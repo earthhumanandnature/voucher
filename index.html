@@ -1006,252 +1006,11 @@ function renderUserVouchers(items) {
 }
 
 /* ─── COMMANDS ─── */
-// Test function to check autocomplete
-function testAutocomplete() {
-  console.log("=== Testing Autocomplete ===");
-  var autocomplete = document.getElementById("cmd-autocomplete");
-  var cmdInput = document.getElementById("cmd-input");
-  var cmdLog = document.getElementById("cmd-log");
-  
-  console.log("Elements found:", {
-    autocomplete: !!autocomplete,
-    cmdInput: !!cmdInput,
-    cmdLog: !!cmdLog
-  });
-  
-  if (autocomplete) {
-    console.log("Autocomplete styles:", {
-      display: window.getComputedStyle(autocomplete).display,
-      visibility: window.getComputedStyle(autocomplete).visibility,
-      zIndex: window.getComputedStyle(autocomplete).zIndex,
-      position: window.getComputedStyle(autocomplete).position
-    });
-  }
-  
-  // Test adding content
-  if (autocomplete) {
-    autocomplete.innerHTML = '<div class="cmd-suggestion">TEST</div>';
-    autocomplete.classList.add("show");
-    console.log("Test content added, show class added");
-  }
-}
-
-// Force test autocomplete visibility
-function forceTestAutocomplete() {
-  console.log("=== FORCE TEST AUTOCOMPLETE ===");
-  var autocomplete = document.getElementById("cmd-autocomplete");
-  
-  if (autocomplete) {
-    // Force all possible display properties
-    autocomplete.style.cssText = `
-      display: block !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-      position: absolute !important;
-      bottom: 100% !important;
-      left: 0 !important;
-      right: 0 !important;
-      z-index: 99999 !important;
-      background: red !important;
-      border: 2px solid yellow !important;
-      height: 200px !important;
-      overflow: auto !important;
-    `;
-    
-    // Add test content
-    autocomplete.innerHTML = `
-      <div style="padding: 10px; background: white; color: black;">
-        <div>TEST AUTOCOMPLETE - Should be visible</div>
-        <div>Background: RED (forced)</div>
-        <div>Border: YELLOW (forced)</div>
-        <div>If you see this, CSS is working</div>
-      </div>
-    `;
-    
-    console.log("Force test applied - check for RED box with YELLOW border");
-  }
-}
-
-// Add button to test
-function addTestButton() {
-  var btn = document.createElement("button");
-  btn.textContent = "TEST AUTOCOMPLETE";
-  btn.style.cssText = `
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    z-index: 100000;
-    background: red;
-    color: white;
-    padding: 10px;
-    border: none;
-    cursor: pointer;
-  `;
-  btn.onclick = forceTestAutocomplete;
-  document.body.appendChild(btn);
-}
-
-// Comprehensive DOM debug
-function comprehensiveDOMDebug() {
-  console.log("=== COMPREHENSIVE DOM DEBUG ===");
-  
-  // Check if elements exist
-  var autocomplete = document.getElementById("cmd-autocomplete");
-  var cmdInput = document.getElementById("cmd-input");
-  var cmdWrap = document.querySelector(".cmd-wrap");
-  var cmdRow = document.querySelector(".cmd-row");
-  
-  console.log("Elements found:", {
-    autocomplete: !!autocomplete,
-    cmdInput: !!cmdInput,
-    cmdWrap: !!cmdWrap,
-    cmdRow: !!cmdRow
-  });
-  
-  // Check parent structure
-  if (autocomplete) {
-    var parent = autocomplete.parentElement;
-    console.log("Autocomplete parent:", parent);
-    console.log("Parent classes:", parent.className);
-    console.log("Parent styles:", {
-      display: window.getComputedStyle(parent).display,
-      visibility: window.getComputedStyle(parent).visibility,
-      overflow: window.getComputedStyle(parent).overflow,
-      position: window.getComputedStyle(parent).position
-    });
-  }
-  
-  // Check if autocomplete is actually in DOM
-  var allElements = document.querySelectorAll("*");
-  var foundAutocomplete = false;
-  for (var i = 0; i < allElements.length; i++) {
-    if (allElements[i].id === "cmd-autocomplete") {
-      foundAutocomplete = true;
-      console.log("Autocomplete found in DOM at index:", i);
-      break;
-    }
-  }
-  console.log("Autocomplete in DOM:", foundAutocomplete);
-  
-  // Create standalone test element
-  var testDiv = document.createElement("div");
-  testDiv.id = "standalone-test";
-  testDiv.style.cssText = `
-    position: fixed;
-    top: 100px;
-    left: 100px;
-    width: 200px;
-    height: 100px;
-    background: lime;
-    border: 3px solid red;
-    z-index: 999999;
-    padding: 10px;
-    color: black;
-    font-weight: bold;
-  `;
-  testDiv.innerHTML = "STANDALONE TEST<br>If you see this, DOM works";
-  document.body.appendChild(testDiv);
-  
-  // Try to append autocomplete to body
-  if (autocomplete) {
-    var clone = autocomplete.cloneNode(true);
-    clone.id = "body-autocomplete";
-    clone.style.cssText = `
-      position: fixed;
-      top: 200px;
-      left: 100px;
-      width: 300px;
-      height: 150px;
-      background: orange;
-      border: 3px solid blue;
-      z-index: 999998;
-      padding: 10px;
-      color: white;
-      font-weight: bold;
-    `;
-    clone.innerHTML = "CLONE TEST<br>This should be visible";
-    document.body.appendChild(clone);
-  }
-  
-  console.log("Added standalone test elements to body");
-}
-
-// Add debug button
-function addDebugButton() {
-  var btn = document.createElement("button");
-  btn.textContent = "DOM DEBUG";
-  btn.style.cssText = `
-    position: fixed;
-    top: 50px;
-    right: 10px;
-    z-index: 100000;
-    background: blue;
-    color: white;
-    padding: 10px;
-    border: none;
-    cursor: pointer;
-    font-weight: bold;
-  `;
-  btn.onclick = comprehensiveDOMDebug;
-  document.body.appendChild(btn);
-}
-
-// Test autocomplete with fixed parent
-function testAutocompleteFixed() {
-  console.log("=== TESTING AUTOCOMPLETE WITH FIXED PARENT ===");
-  var autocomplete = document.getElementById("cmd-autocomplete");
-  
-  if (autocomplete) {
-    // Clear previous content
-    autocomplete.innerHTML = "";
-    autocomplete.style.cssText = ""; // Reset inline styles
-    
-    // Add test content
-    autocomplete.innerHTML = `
-      <div class="cmd-suggestion" data-cmd="/give">
-        <span class="cmd-suggestion-cmd">/give</span>
-        <span class="cmd-suggestion-desc">Test command - Should be visible</span>
-      </div>
-      <div class="cmd-suggestion" data-cmd="/help">
-        <span class="cmd-suggestion-cmd">/help</span>
-        <span class="cmd-suggestion-desc">Show help - Should be visible</span>
-      </div>
-    `;
-    
-    // Add show class
-    autocomplete.classList.add("show");
-    
-    console.log("Test autocomplete with fixed parent - Check for dropdown above command input");
-  }
-}
-
-// Add test button
-function addTestButtonFixed() {
-  var btn = document.createElement("button");
-  btn.textContent = "TEST AUTOCOMPLETE";
-  btn.style.cssText = `
-    position: fixed;
-    top: 150px;
-    right: 10px;
-    z-index: 100000;
-    background: green;
-    color: white;
-    padding: 10px;
-    border: none;
-    cursor: pointer;
-    font-weight: bold;
-  `;
-  btn.onclick = testAutocompleteFixed;
-  document.body.appendChild(btn);
-}
-
-// Run test immediately
-testAutocompleteFixed();
-addTestButtonFixed();
+// Run initial suggestions update
+updateSuggestions();
 
 document.getElementById("cmd-send").addEventListener("click", runCmd);
 document.getElementById("cmd-input").addEventListener("keydown", function(e) { 
-  console.log("Key pressed:", e.key); // Debug
   if (e.key === "Enter") runCmd(); 
   if (e.key === "ArrowUp" || e.key === "ArrowDown") handleAutocompleteNav(e);
   if (e.key === "Escape") hideAutocomplete();
@@ -1259,7 +1018,6 @@ document.getElementById("cmd-input").addEventListener("keydown", function(e) {
 });
 
 document.getElementById("cmd-input").addEventListener("input", function(e) {
-  console.log("Input changed:", this.value); // Debug
   var value = this.value.trim();
   if (value.length > 0) {
     showAutocomplete();
@@ -1650,8 +1408,6 @@ function cmdRemove(email, idx) {
       logAction("REMOVE", "Xóa voucher #"+idx+" ("+pct+"%) của "+email);
       toast("Đã xóa voucher #"+idx+" của "+email);
     });
-  }).catch(function(e) { if (e !== "skip") clog("❌ " + e.message, "error"); });
-}
 
 function cmdUsed(email, idx) {
   var ref = db.collection("vouchers").doc(email);
@@ -1659,7 +1415,6 @@ function cmdUsed(email, idx) {
     if (!snap.exists) { clog("❌ Không tìm thấy: " + email, "error"); return Promise.reject("skip"); }
     var items = snap.data().items || [];
     if (idx < 1 || idx > items.length) { clog("❌ STT #"+idx+" không tồn tại. Có "+items.length+" voucher.", "error"); return Promise.reject("skip"); }
-    if (items[idx-1].used) { clog("⚠️ Voucher #"+idx+" của "+email+" đã được dùng trước đó.", "warning"); return Promise.reject("skip"); }
     var pct = items[idx-1].percent;
     items[idx-1].used  = true;
     items[idx-1].usedAt = Date.now();
@@ -1671,75 +1426,7 @@ function cmdUsed(email, idx) {
   }).catch(function(e) { if (e !== "skip") clog("❌ " + e.message, "error"); });
 }
 
-function cmdHelp() {
-  clog("📋 Danh sách lệnh:", "info");
-  clog("  /give <email> voucher <%> - Cấp voucher giảm giá", "command");
-  clog("  /remove <email> voucher <STT> - Xóa voucher theo số thứ tự", "command");
-  clog("  /used <email> voucher <STT> - Đánh dấu voucher là đã sử dụng", "command");
-  clog("  /help - Hiển thị help này", "command");
-  clog("  /clear - Xóa log terminal", "command");
-  clog("  /stats - Hiển thị thống kê hệ thống", "command");
-  clog("  /users - Hiển thị danh sách người dùng", "command");
-  clog("  /search <email> - Tìm kiếm voucher của user", "command");
-  clog("  /export [format] - Xuất dữ liệu (json/csv)", "command");
-  logAction("HELP", "Hiển thị danh sách lệnh");
-}
-
-function cmdClear() {
-  var cmdLog = document.getElementById("cmd-log");
-  cmdLog.innerHTML = '<div class="cl inf">VoucherVault Owner Terminal — gõ lệnh bên dưới</div>';
-  clog("🧹 Terminal đã được xóa", "success");
-  logAction("CLEAR", "Xóa terminal log");
-}
-
-function cmdStats() {
-  var total = allVouchers.length;
-  var used = allVouchers.filter(function(v) { return v.used; }).length;
-  var active = total - used;
-  var uniq = new Set(allVouchers.map(function(v) { return v.userEmail; })).size;
-  
-  clog("📊 Thống kê hệ thống:", "info");
-  clog("  Tổng voucher: " + total, "command");
-  clog("  Đã sử dụng: " + used, "command");
-  clog("  Còn hiệu lực: " + active, "command");
-  clog("  Người dùng: " + uniq, "command");
-  logAction("STATS", "Xem thống kê hệ thống");
-}
-
-function cmdUsers() {
-  if (allUsers.length === 0) {
-    clog("👥 Chưa có người dùng nào", "warning");
-    return;
-  }
-  
-  clog("👥 Danh sách người dùng (" + allUsers.length + "):", "info");
-  allUsers.slice(0, 10).forEach(function(user, i) {
-    var status = user.isOnline ? "🟢 Online" : "⚫ Offline";
-    var vouchers = user.voucherCount || 0;
-    clog("  " + (i+1) + ". " + user.email + " | " + vouchers + " voucher | " + status, "command");
-  });
-  
-  if (allUsers.length > 10) {
-    clog("  ... và " + (allUsers.length - 10) + " người dùng khác", "command");
-  }
-  
-  logAction("USERS", "Xem danh sách người dùng");
-}
-
-function cmdSearch(email) {
-  var ref = db.collection("vouchers").doc(email);
-  ref.get().then(function(snap) {
-    if (!snap.exists) {
-      clog("❌ Không tìm thấy user: " + email, "error");
-      return;
-    }
-    
-    var items = snap.data().items || [];
-    if (items.length === 0) {
-      clog("📭 " + email + " không có voucher nào", "warning");
-      return;
-    }
-    
+// ...
     clog("🔍 Voucher của " + email + " (" + items.length + "):", "info");
     items.forEach(function(v, i) {
       var status = v.used ? "🔴 Đã dùng" : "🟢 Còn hiệu lực";
