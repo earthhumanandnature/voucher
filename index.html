@@ -275,6 +275,7 @@
     opacity:0;
     max-height:0;
     transition:opacity 0.3s ease, max-height 0.3s ease;
+    pointer-events:none; /* Disable mouse events when minimized */
   }
   
   #youtube-mini.minimized .youtube-info{
@@ -289,6 +290,14 @@
     font-size:0.75rem;
     padding:0.3rem 0.6rem;
     transition:font-size 0.3s ease, padding 0.3s ease;
+  }
+  
+  #youtube-mini.minimized .youtube-video iframe{
+    position:absolute;
+    top:-9999px; /* Move iframe out of view but keep playing */
+    left:-9999px;
+    width:1px;
+    height:1px;
   }
   
   @media(max-width:600px){
@@ -1114,28 +1123,14 @@ document.addEventListener("DOMContentLoaded", function() {
         mini.classList.add("minimized");
         minimizeBtn.textContent = "□";
         
-        // Pause video when minimized to save resources
-        var iframe = mini.querySelector('iframe');
-        if (iframe) {
-          var src = iframe.src;
-          iframe.src = ''; // Stop video
-          setTimeout(function() {
-            iframe.src = src; // Restore when maximized
-          }, 100);
-        }
+        // Keep playing when minimized - just hide video visually
+        // Don't pause the video, let it continue playing in background
       } else {
         // Remove minimized class for smooth transition
         mini.classList.remove("minimized");
         minimizeBtn.textContent = "━";
         
-        // Restore video when maximized
-        var iframe = mini.querySelector('iframe');
-        if (iframe && !iframe.src) {
-          if (currentVideoId) {
-            iframe.src = "https://www.youtube.com/embed/" + currentVideoId + 
-              "?autoplay=1&controls=1&modestbranding=1&rel=0";
-          }
-        }
+        // Video is already playing, no need to restore
       }
     });
   }
