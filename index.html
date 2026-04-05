@@ -206,42 +206,15 @@
   }
   .youtube-search:focus{border-color:var(--gold);}
   
-  .youtube-search-results{
-    position:absolute;top:100%;left:0;right:0;
-    background:var(--surface);border:1px solid var(--border2);
-    border-radius:8px;margin-top:4px;max-height:300px;overflow-y:auto;
-    display:none;z-index:1001;box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  .youtube-controls{
+    display:flex;gap:6px;
   }
-  .youtube-search-results.show{display:block;}
-  .youtube-result-item{
-    padding:0.8rem 1rem;display:flex;align-items:center;gap:12px;
-    cursor:pointer;transition:background 0.15s;border-bottom:1px solid var(--border);
-  }
-  .youtube-result-item:last-child{border-bottom:none;}
-  .youtube-result-item:hover{background:var(--surface2);}
-  .youtube-result-thumbnail{
-    width:60px;height:45px;border-radius:4px;background:var(--surface);
-    display:flex;align-items:center;justify-content:center;color:var(--text3);
-    font-size:0.7rem;font-family:'DM Mono',monospace;flex-shrink:0;
-  }
-  .youtube-result-info{
-    flex:1;min-width:0;
-  }
-  .youtube-result-title{
-    font-family:'DM Sans',sans-serif;font-size:0.85rem;
-    font-weight:500;color:var(--text);margin-bottom:2px;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  }
-  .youtube-result-meta{
-    font-family:'DM Mono',monospace;font-size:0.7rem;
-    color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  }
-  .youtube-controls{display:flex;gap:6px;}
   .youtube-btn-small{
     background:none;border:none;color:var(--text3);cursor:pointer;
     padding:4px;border-radius:4px;transition:background 0.15s,color 0.15s;
   }
   .youtube-btn-small:hover{background:var(--surface);color:var(--text);}
+  .youtube-btn-small.active{color:var(--gold);}
   
   .youtube-body{flex:1;display:flex;flex-direction:column;}
   .youtube-video{flex:1;background:#000;position:relative;}
@@ -250,6 +223,38 @@
     display:flex;align-items:center;justify-content:center;height:100%;
     color:var(--text3);font-family:'DM Mono',monospace;font-size:0.8rem;
   }
+  
+  .youtube-player-controls{
+    background:var(--surface2);padding:0.8rem 1rem;
+    border-top:1px solid var(--border);display:flex;align-items:center;gap:12px;
+  }
+  .youtube-control-group{
+    display:flex;align-items:center;gap:8px;
+  }
+  .youtube-control-label{
+    font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--text3);
+    min-width:40px;
+  }
+  .youtube-slider{
+    width:80px;height:4px;background:var(--border);border-radius:2px;
+    outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;
+  }
+  .youtube-slider::-webkit-slider-thumb{
+    -webkit-appearance:none;width:12px;height:12px;background:var(--gold);
+    border-radius:50%;cursor:pointer;
+  }
+  .youtube-slider::-moz-range-thumb{
+    width:12px;height:12px;background:var(--gold);
+    border-radius:50%;cursor:pointer;border:none;
+  }
+  .youtube-button{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:4px;padding:4px 8px;color:var(--text);
+    font-family:'DM Mono',monospace;font-size:0.7rem;cursor:pointer;
+    transition:background 0.15s,border-color 0.15s;
+  }
+  .youtube-button:hover{background:var(--surface2);border-color:var(--border2);}
+  .youtube-button.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
   
   .youtube-info{
     padding:0.8rem 1rem;background:var(--surface2);
@@ -982,6 +987,9 @@ function toast(msg) {
 var youtubePlayer = null;
 var currentVideoId = null;
 var isMinimized = false;
+var isLooping = false;
+var currentVolume = 50;
+var currentSpeed = 1.0;
 
 function isYouTubeUrl(url) {
   return url.includes("youtube.com/watch") || url.includes("youtu.be/");
@@ -993,303 +1001,151 @@ function extractVideoId(url) {
   return (match && match[7].length === 11) ? match[7] : null;
 }
 
-function searchYouTube(query) {
-  toast("🔍 Đang tìm kiếm: " + query);
-  
-  // Free YouTube search using alternative methods
-  // Method 1: Try YouTube oembed for popular videos
-  // Method 2: Use YouTube RSS feeds
-  // Method 3: Fallback to smart mock search
-  
-  // Try to get real YouTube data using free methods
-  searchYouTubeFree(query);
-}
-
-function searchYouTubeFree(query) {
-  // Method 1: Use YouTube search suggestions API (free, no key required)
-  var suggestionsUrl = "https://suggestqueries.google.com/complete/search?client=youtube&ds=yt&q=" + encodeURIComponent(query);
-  
-  fetch(suggestionsUrl)
-    .then(function(response) {
-      if (!response.ok) throw new Error("Suggestions API failed");
-      return response.text();
-    })
-    .then(function(text) {
-      try {
-        // Parse JSONP response
-        var jsonpText = text.replace(/^window.google.ac.h\(/, '').replace(/\)$/, '');
-        var data = JSON.parse(jsonpText);
-        if (data[1] && data[1].length > 0) {
-          // Get first suggestion and search for it
-          var firstSuggestion = data[1][0][0];
-          searchYouTubeByTitle(firstSuggestion);
-          return;
-        }
-      } catch (e) {
-        console.warn("Failed to parse suggestions:", e);
-      }
-      // Fallback to RSS method
-      searchYouTubeRSS(query);
-    })
-    .catch(function(error) {
-      console.warn("Suggestions API error:", error);
-      // Fallback to RSS method
-      searchYouTubeRSS(query);
-    });
-}
-
-function searchYouTubeRSS(query) {
-  // Method 2: Use YouTube RSS feeds for trending videos (free)
-  var trendingUrl = "https://www.youtube.com/feeds/videos.xml?channel_id=UCuAXFkgsw1L7xaCfnd5JJOw"; // Popular music channel
-  
-  fetch(trendingUrl)
-    .then(function(response) {
-      if (!response.ok) throw new Error("RSS feed failed");
-      return response.text();
-    })
-    .then(function(xmlText) {
-      try {
-        // Parse XML and extract video info
-        var parser = new DOMParser();
-        var xmlDoc = parser.parseFromString(xmlText, "text/xml");
-        var entries = xmlDoc.getElementsByTagName('entry');
-        var results = [];
-        
-        for (var i = 0; i < Math.min(entries.length, 10); i++) {
-          var entry = entries[i];
-          var title = entry.getElementsByTagName('title')[0].textContent;
-          var videoId = extractVideoIdFromXml(entry);
-          
-          if (videoId && title.toLowerCase().includes(query.toLowerCase())) {
-            results.push({
-              id: videoId,
-              title: title,
-              channel: extractChannelFromXml(entry),
-              views: "N/A",
-              thumbnail: "https://img.youtube.com/vi/" + videoId + "/default.jpg"
-            });
-          }
-        }
-        
-        if (results.length > 0) {
-          displaySearchResults(results);
-          return;
-        }
-      } catch (e) {
-        console.warn("Failed to parse RSS:", e);
-      }
-      // Fallback to smart mock search
-      fallbackToMockSearch(query);
-    })
-    .catch(function(error) {
-      console.warn("RSS feed error:", error);
-      // Fallback to smart mock search
-      fallbackToMockSearch(query);
-    });
-}
-
-function searchYouTubeByTitle(title) {
-  // Method 3: Use YouTube oembed API (free, no key required)
-  // This works for specific video URLs but not for search
-  
-  // For now, create a realistic result based on the title
-  var mockVideoId = generateVideoIdFromTitle(title);
-  var results = [{
-    id: mockVideoId,
-    title: title,
-    channel: "YouTube Search Result",
-    views: "N/A",
-    thumbnail: "https://img.youtube.com/vi/" + mockVideoId + "/default.jpg"
-  }];
-  
-  displaySearchResults(results);
-  toast("🎵 Kết quả tìm kiếm (phương thức miễn phí)");
-}
-
-function generateVideoIdFromTitle(title) {
-  // Generate a realistic-looking video ID based on title hash
-  var hash = 0;
-  for (var i = 0; i < title.length; i++) {
-    var char = title.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  
-  // Convert to base62 and pad to 11 characters
-  var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
-  var result = '';
-  for (var i = 0; i < 11; i++) {
-    result += chars[Math.abs(hash * (i + 1)) % chars.length];
-  }
-  return result;
-}
-
-function extractVideoIdFromXml(entry) {
-  var linkElements = entry.getElementsByTagName('link');
-  for (var i = 0; i < linkElements.length; i++) {
-    var href = linkElements[i].getAttribute('href');
-    if (href && href.includes('youtube.com/watch?v=')) {
-      return extractVideoId(href);
-    }
-  }
-  return null;
-}
-
-function extractChannelFromXml(entry) {
-  var authorElement = entry.getElementsByTagName('name')[0];
-  return authorElement ? authorElement.textContent : "Unknown Channel";
-}
-
-function fallbackToMockSearch(query) {
-  console.log("Using fallback mock search for:", query);
-  
-  // Mock YouTube search results with realistic data including Vietnamese videos
-  var mockResults = [
-    // Vietnamese Videos
-    { id: "4B_1j2k8Q8c", title: "Sơn Tùng M-TP - Hãy Trao Cho Anh", channel: "Sơn Tùng M-TP", views: "500M views" },
-    { id: "XqZso6555Lc", title: "Bích Phương - Bùa Yêu", channel: "Bích Phương", views: "200M views" },
-    { id: "1qLw7M5VH2I", title: "Đen Vâu - Mang Tiền Về Cho Mẹ", channel: "Đen Vâu", views: "150M views" },
-    { id: "9MgOQu8wZ2U", title: "Hồ Ngọc Hà - Đừng Lời Nói Dối", channel: "Hồ Ngọc Hà", views: "100M views" },
-    { id: "JGwWNGJdvx8", title: "No Phan - Đi Để Trở Về", channel: "No Phan", views: "80M views" },
-    { id: "kVJpKQ8b8jI", title: "Lê Bảo Bình - Việt Nam Tôi Đợi", channel: "Lê Bảo Bình", views: "120M views" },
-    { id: "fRh_vgS2D8U", title: "Hoàng Thùy Linh - Để Mị Nói Cho Mà Nghe", channel: "Hoàng Thùy Linh", views: "90M views" },
-    { id: "09R8_2nJtjg", title: "K-ICM & Jack - Hẹn Yêu", channel: "K-ICM", views: "250M views" },
-    { id: "pRpeEdMmmQ0", title: "MTP - Nơi Này Có Anh", channel: "Sơn Tùng M-TP", views: "300M views" },
-    { id: "l3wh2T8Aq1g", title: "Văn Mai Hương - Ngày Đầu Tiên", channel: "Văn Mai Hương", views: "60M views" },
-    
-    // International Videos
-    { id: "dQw4w9WgXcQ", title: "Never Gonna Give You Up", channel: "Rick Astley", views: "1.4B views" },
-    { id: "9bZkp7q19f0", title: "Gangnam Style", channel: "PSY", views: "4.7B views" },
-    { id: "kJQP7kiw5Fk", title: "Luis Fonsi - Despacito", channel: "Luis Fonsi", views: "8.2B views" },
-    { id: "RgKAFK5djSk", title: "Mark Ronson - Uptown Funk", channel: "Mark Ronson", views: "4.6B views" },
-    { id: "kTJczUoc26U", title: "Shape of You", channel: "Ed Sheeran", views: "5.9B views" },
-    { id: "hTWKbfoikeg", title: "John Legend - All of Me", channel: "John Legend", views: "2.5B views" },
-    { id: "fRh_vgS2D8U", title: "Clean Bandit - Rockabye", channel: "Clean Bandit", views: "2.1B views" },
-    { id: "09R8_2nJtjg", title: "Maroon 5 - Sugar", channel: "Maroon 5", views: "3.6B views" },
-    { id: "pRpeEdMmmQ0", title: "Major Lazer - Lean On", channel: "Major Lazer", views: "3.3B views" },
-    { id: "l3wh2T8Aq1g", title: "Wiz Khalifa - See You Again", channel: "Wiz Khalifa", views: "5.6B views" }
-  ];
-  
-  // Advanced search function that matches ALL words in the query
-  function matchesAllWords(text, searchWords) {
-    return searchWords.every(function(word) {
-      return text.toLowerCase().includes(word.toLowerCase());
-    });
-  }
-  
-  // Split query into individual words
-  var searchWords = query.trim().split(/\s+/).filter(function(word) {
-    return word.length > 0;
-  });
-  
-  // Filter results based on ALL words in the query
-  var filteredResults = mockResults.filter(function(video) {
-    var title = video.title.toLowerCase();
-    var channel = video.channel.toLowerCase();
-    var fullText = (video.title + " " + video.channel).toLowerCase();
-    
-    // Match ALL words in either title, channel, or combined
-    return matchesAllWords(video.title + " " + video.channel, searchWords) ||
-           matchesAllWords(video.title, searchWords) ||
-           matchesAllWords(video.channel, searchWords);
-  });
-  
-  // Sort by relevance (more matches = higher priority)
-  filteredResults.sort(function(a, b) {
-    var aMatches = 0;
-    var bMatches = 0;
-    
-    searchWords.forEach(function(word) {
-      if ((a.title + " " + a.channel).toLowerCase().includes(word.toLowerCase())) aMatches++;
-      if ((b.title + " " + b.channel).toLowerCase().includes(word.toLowerCase())) bMatches++;
-    });
-    
-    return bMatches - aMatches;
-  });
-  
-  // If no matches, return all results
-  if (filteredResults.length === 0) {
-    filteredResults = mockResults.slice(0, 10);
-  } else {
-    filteredResults = filteredResults.slice(0, 10);
-  }
-  
-  displaySearchResults(filteredResults);
-  toast("📋 Sử dụng kết quả mẫu (API cần cấu hình)");
-}
-
-function displaySearchResults(results) {
-  var resultsContainer = document.getElementById("youtube-search-results");
-  if (!resultsContainer) return;
-  
-  if (results.length === 0) {
-    resultsContainer.innerHTML = '<div class="youtube-result-item"><div class="youtube-result-info">Không tìm thấy kết quả</div></div>';
-  } else {
-    resultsContainer.innerHTML = results.map(function(video, index) {
-      return '<div class="youtube-result-item" data-video-id="' + video.id + '" data-title="' + video.title + '" data-channel="' + video.channel + '">' +
-        '<div class="youtube-result-thumbnail">' + (index + 1) + '</div>' +
-        '<div class="youtube-result-info">' +
-          '<div class="youtube-result-title">' + video.title + '</div>' +
-          '<div class="youtube-result-meta">' + video.channel + ' · ' + video.views + '</div>' +
-        '</div>' +
-      '</div>';
-    }).join('');
-    
-    // Add click handlers to result items
-    resultsContainer.querySelectorAll('.youtube-result-item').forEach(function(item) {
-      item.addEventListener('click', function() {
-        var videoId = this.getAttribute('data-video-id');
-        var title = this.getAttribute('data-title');
-        var channel = this.getAttribute('data-channel');
-        
-        loadVideo(videoId);
-        updateVideoInfo(title, channel);
-        hideSearchResults();
-        
-        // Clear search input
-        var searchInput = document.getElementById("youtube-search");
-        if (searchInput) searchInput.value = title;
-      });
-    });
-  }
-  
-  resultsContainer.classList.add('show');
-}
-
-function hideSearchResults() {
-  var resultsContainer = document.getElementById("youtube-search-results");
-  if (resultsContainer) {
-    resultsContainer.classList.remove('show');
-  }
-}
-
 function loadVideo(videoId) {
   currentVideoId = videoId;
   var videoContainer = document.getElementById("youtube-video");
   
-  // Create iframe for YouTube video
+  // Create iframe for YouTube video with enhanced controls
   var iframe = document.createElement("iframe");
-  iframe.src = "https://www.youtube.com/embed/" + videoId + "?autoplay=1&controls=1&modestbranding=1&rel=0";
+  iframe.src = "https://www.youtube.com/embed/" + videoId + 
+    "?autoplay=1" +
+    "&controls=1" +
+    "&modestbranding=1" +
+    "&rel=0" +
+    "&enablejsapi=1" +
+    "&origin=" + window.location.origin;
   iframe.frameBorder = "0";
   iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
   iframe.allowFullscreen = true;
+  iframe.id = "youtube-iframe";
   
   videoContainer.innerHTML = "";
   videoContainer.appendChild(iframe);
   
-  // Update video info (mock data for demo)
-  updateVideoInfo("Sample Video Title", "Sample Channel");
+  // Setup YouTube API listeners
+  setupYouTubeAPI();
+  
+  // Update video info
+  updateVideoInfo("YouTube Video", "Loading...");
   
   toast("▶️ Đang phát video");
+}
+
+function setupYouTubeAPI() {
+  // Listen for iframe ready message
+  window.addEventListener("message", function(event) {
+    if (event.origin !== "https://www.youtube.com") return;
+    
+    try {
+      var data = JSON.parse(event.data);
+      
+      if (data.event === "onReady") {
+        // Apply current settings when player is ready
+        applyPlayerSettings();
+      } else if (data.event === "onStateChange") {
+        // Handle loop when video ends
+        if (data.info === 0 && isLooping) { // ENDED state
+          setTimeout(function() {
+            if (currentVideoId && isLooping) {
+              seekVideo(0);
+              playVideo();
+            }
+          }, 1000);
+        }
+      }
+    } catch (e) {
+      // Ignore non-JSON messages
+    }
+  });
+}
+
+function applyPlayerSettings() {
+  if (!currentVideoId) return;
+  
+  var iframe = document.getElementById("youtube-iframe");
+  if (!iframe) return;
+  
+  // Apply volume
+  setVolume(currentVolume);
+  
+  // Apply playback rate
+  setPlaybackRate(currentSpeed);
+}
+
+function sendYouTubeCommand(command, args) {
+  var iframe = document.getElementById("youtube-iframe");
+  if (!iframe) return;
+  
+  var message = {
+    event: "command",
+    func: command,
+    args: args || []
+  };
+  
+  iframe.contentWindow.postMessage(JSON.stringify(message), "https://www.youtube.com");
+}
+
+function playVideo() {
+  sendYouTubeCommand("playVideo");
+}
+
+function pauseVideo() {
+  sendYouTubeCommand("pauseVideo");
+}
+
+function seekVideo(seconds) {
+  sendYouTubeCommand("seekTo", [seconds, true]);
+}
+
+function setVolume(volume) {
+  currentVolume = volume;
+  sendYouTubeCommand("setVolume", [volume]);
+  
+  // Update UI
+  var volumeValue = document.getElementById("volume-value");
+  if (volumeValue) volumeValue.textContent = volume + "%";
+}
+
+function setPlaybackRate(rate) {
+  currentSpeed = rate;
+  sendYouTubeCommand("setPlaybackRate", [rate]);
+  
+  // Update UI
+  var speedValue = document.getElementById("speed-value");
+  if (speedValue) speedValue.textContent = (rate / 100) + "x";
+}
+
+function toggleLoop() {
+  isLooping = !isLooping;
+  var loopBtn = document.getElementById("loop-btn");
+  if (loopBtn) {
+    if (isLooping) {
+      loopBtn.classList.add("active");
+      loopBtn.textContent = "🔁 Looping";
+    } else {
+      loopBtn.classList.remove("active");
+      loopBtn.textContent = "🔁 Loop";
+    }
+  }
+  
+  toast(isLooping ? "🔁 Loop đã bật" : "⏸️ Loop đã tắt");
 }
 
 function stopVideo() {
   if (currentVideoId) {
     var videoContainer = document.getElementById("youtube-video");
-    videoContainer.innerHTML = '<div class="youtube-placeholder">Nhập từ khóa hoặc dán link YouTube</div>';
+    videoContainer.innerHTML = '<div class="youtube-placeholder">Dán link YouTube để phát video</div>';
     currentVideoId = null;
     var infoPanel = document.getElementById("youtube-info");
     if (infoPanel) infoPanel.style.display = "none";
+    
+    // Reset controls
+    isLooping = false;
+    var loopBtn = document.getElementById("loop-btn");
+    if (loopBtn) {
+      loopBtn.classList.remove("active");
+      loopBtn.textContent = "🔁 Loop";
+    }
   }
 }
 
@@ -1368,24 +1224,9 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // YouTube search handler
+  // YouTube search handler (now only handles links)
   var searchInput = document.getElementById("youtube-search");
   if (searchInput) {
-    var searchTimeout;
-    
-    searchInput.addEventListener("input", function(e) {
-      var query = this.value.trim();
-      clearTimeout(searchTimeout);
-      
-      if (query.length >= 2) {
-        searchTimeout = setTimeout(function() {
-          searchYouTube(query);
-        }, 300); // Debounce search
-      } else {
-        hideSearchResults();
-      }
-    });
-    
     searchInput.addEventListener("keydown", function(e) {
       if (e.key === "Enter") {
         var query = this.value.trim();
@@ -1394,25 +1235,58 @@ document.addEventListener("DOMContentLoaded", function() {
             var videoId = extractVideoId(query);
             if (videoId) {
               loadVideo(videoId);
-              hideSearchResults();
+              updateVideoInfo("YouTube Video", "Playing...");
+              this.value = ""; // Clear input after loading
             } else {
               toast("❌ Link YouTube không hợp lệ");
             }
           } else {
-            searchYouTube(query);
+            toast("❌ Chỉ hỗ trợ link YouTube. Vui lòng dán link youtube.com/watch hoặc youtu.be");
           }
         }
       } else if (e.key === "Escape") {
-        hideSearchResults();
+        this.value = "";
         this.blur();
       }
     });
     
-    // Hide results when clicking outside
-    document.addEventListener("click", function(e) {
-      if (!e.target.closest(".youtube-header")) {
-        hideSearchResults();
+    // Add paste event handler for convenience
+    searchInput.addEventListener("paste", function(e) {
+      var pastedText = (e.clipboardData || window.clipboardData).getData('text');
+      if (isYouTubeUrl(pastedText)) {
+        setTimeout(function() {
+          var videoId = extractVideoId(pastedText);
+          if (videoId) {
+            loadVideo(videoId);
+            updateVideoInfo("YouTube Video", "Playing...");
+            searchInput.value = "";
+          }
+        }, 100);
       }
+    });
+  }
+  
+  // Volume slider handler
+  var volumeSlider = document.getElementById("volume-slider");
+  if (volumeSlider) {
+    volumeSlider.addEventListener("input", function() {
+      setVolume(parseInt(this.value));
+    });
+  }
+  
+  // Speed slider handler
+  var speedSlider = document.getElementById("speed-slider");
+  if (speedSlider) {
+    speedSlider.addEventListener("input", function() {
+      setPlaybackRate(parseInt(this.value));
+    });
+  }
+  
+  // Loop button handler
+  var loopBtn = document.getElementById("loop-btn");
+  if (loopBtn) {
+    loopBtn.addEventListener("click", function() {
+      toggleLoop();
     });
   }
 });
@@ -1426,9 +1300,8 @@ document.addEventListener("DOMContentLoaded", function() {
 </button>
 
 <div id="youtube-mini">
-  <div class="youtube-header" style="position:relative;">
-    <input type="text" class="youtube-search" id="youtube-search" placeholder="Tìm video hoặc dán link...">
-    <div class="youtube-search-results" id="youtube-search-results"></div>
+  <div class="youtube-header">
+    <input type="text" class="youtube-search" id="youtube-search" placeholder="Dán link YouTube...">
     <div class="youtube-controls">
       <button class="youtube-btn-small" id="youtube-minimize" title="Thu nhỏ">━</button>
       <button class="youtube-btn-small" id="youtube-close" title="Đóng">✕</button>
@@ -1437,7 +1310,22 @@ document.addEventListener("DOMContentLoaded", function() {
   <div class="youtube-body">
     <div class="youtube-video" id="youtube-video">
       <div class="youtube-placeholder">
-        Nhập từ khóa hoặc dán link YouTube
+        Dán link YouTube để phát video
+      </div>
+    </div>
+    <div class="youtube-player-controls">
+      <div class="youtube-control-group">
+        <span class="youtube-control-label">🔊</span>
+        <input type="range" class="youtube-slider" id="volume-slider" min="0" max="100" value="50">
+        <span id="volume-value" class="youtube-control-label">50%</span>
+      </div>
+      <div class="youtube-control-group">
+        <span class="youtube-control-label">⚡</span>
+        <input type="range" class="youtube-slider" id="speed-slider" min="25" max="200" value="100" step="25">
+        <span id="speed-value" class="youtube-control-label">1x</span>
+      </div>
+      <div class="youtube-control-group">
+        <button class="youtube-button" id="loop-btn">🔁 Loop</button>
       </div>
     </div>
     <div class="youtube-info" id="youtube-info" style="display:none;">
