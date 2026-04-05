@@ -1023,25 +1023,44 @@ function searchYouTube(query) {
     { id: "l3wh2T8Aq1g", title: "Wiz Khalifa - See You Again", channel: "Wiz Khalifa", views: "5.6B views" }
   ];
   
-  // Filter results based on query (improved text matching with Vietnamese support)
-  var filteredResults = mockResults.filter(function(video) {
-    var searchTerm = query.toLowerCase();
-    var title = video.title.toLowerCase();
-    var channel = video.channel.toLowerCase();
-    
-    // Support Vietnamese characters and common search terms
-    return title.includes(searchTerm) || 
-           channel.includes(searchTerm) ||
-           // Support common Vietnamese search variations
-           (searchTerm.includes('viet') && (title.includes('việt') || title.includes('viet'))) ||
-           (searchTerm.includes('son tung') && title.includes('sơn tùng')) ||
-           (searchTerm.includes('den') && title.includes('đen')) ||
-           (searchTerm.includes('jack') && title.includes('jack')) ||
-           (searchTerm.includes('bich') && title.includes('bích')) ||
-           (searchTerm.includes('hoang') && title.includes('hoàng'));
+  // Advanced search function that matches ALL words in the query
+  function matchesAllWords(text, searchWords) {
+    return searchWords.every(function(word) {
+      return text.toLowerCase().includes(word.toLowerCase());
+    });
+  }
+  
+  // Split query into individual words
+  var searchWords = query.trim().split(/\s+/).filter(function(word) {
+    return word.length > 0;
   });
   
-  // If no matches, return all results (prioritize Vietnamese first)
+  // Filter results based on ALL words in the query
+  var filteredResults = mockResults.filter(function(video) {
+    var title = video.title.toLowerCase();
+    var channel = video.channel.toLowerCase();
+    var fullText = (video.title + " " + video.channel).toLowerCase();
+    
+    // Match ALL words in either title, channel, or combined
+    return matchesAllWords(video.title + " " + video.channel, searchWords) ||
+           matchesAllWords(video.title, searchWords) ||
+           matchesAllWords(video.channel, searchWords);
+  });
+  
+  // Sort by relevance (more matches = higher priority)
+  filteredResults.sort(function(a, b) {
+    var aMatches = 0;
+    var bMatches = 0;
+    
+    searchWords.forEach(function(word) {
+      if ((a.title + " " + a.channel).toLowerCase().includes(word.toLowerCase())) aMatches++;
+      if ((b.title + " " + b.channel).toLowerCase().includes(word.toLowerCase())) bMatches++;
+    });
+    
+    return bMatches - aMatches;
+  });
+  
+  // If no matches, return all results
   if (filteredResults.length === 0) {
     filteredResults = mockResults.slice(0, 10);
   } else {
