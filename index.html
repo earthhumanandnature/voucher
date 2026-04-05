@@ -610,7 +610,13 @@ auth.onAuthStateChanged(function(user) {
     renderApp(user);
     trackUserLogin(user);
     startHeartbeat(user.email);
-    if (isOwner) { listenOwner(); listenUsers(); listenOnlineStatus(); }
+    if (isOwner) { 
+      listenOwner(); 
+      listenUsers(); 
+      listenOnlineStatus(); 
+      loadOwnerLogs(); // Load logs from Firebase
+      updateSuggestions(); // Update email suggestions
+    }
     else         listenUser(user);
   } else {
     if (heartbeatInterval) {
@@ -1337,7 +1343,7 @@ function runCmd() {
   var raw = inp.value.trim();
   if (!raw) return;
   
-  // Log the command
+  // Log the command to Firebase
   logCommand(raw);
   
   inp.value = "";
@@ -1350,36 +1356,175 @@ function runCmd() {
   var c = raw.match(/^\/clear\s*$/i);
   var s = raw.match(/^\/stats\s*$/i);
   var us = raw.match(/^\/users\s*$/i);
-  var se = raw.match(/^\/search\s+(\S+)\s*$/i);
-  var ex = raw.match(/^\/export\s*(\w*)\s*$/i);
-
-  if (g)      cmdGive(g[1], parseFloat(g[2]));
-  else if (r) cmdRemove(r[1], parseInt(r[2]));
-  else if (u) cmdUsed(u[1], parseInt(u[2]));
-  else if (h) cmdHelp();
-  else if (c) cmdClear();
-  else if (s) cmdStats();
-  else if (us) cmdUsers();
-  else if (se) cmdSearch(se[1]);
-  else if (ex) cmdExport(ex[1]);
-  else        clog("❌ Lệnh không hợp lệ. Gõ /help để xem danh sách lệnh.", "error");
-}
-
-function logCommand(command) {
-  var timestamp = new Date().toLocaleTimeString("vi-VN");
-  var logEntry = document.createElement("div");
-  logEntry.className = "cl command";
-  logEntry.innerHTML = '<span class="timestamp">[' + timestamp + ']</span> $ ' + command;
+  var se = raw.match(/^\/search\s+(.+)\s*$/i);
+  var ex = raw.match(/^\/export\s*(.*)\s*$/i);
   
-  var cmdLog = document.getElementById("cmd-log");
-  if (cmdLog) {
-    cmdLog.appendChild(logEntry);
-    cmdLog.scrollTop = cmdLog.scrollHeight;
-    console.log("Command logged:", command); // Debug
+  if (h) {
+    clog("📋 Danh sách lệnh:", "info");
+    clog("• /give email voucher [%] - Cấp voucher giảm giá", "info");
+    clog("• /remove email voucher [STT] - Xóa voucher theo số thứ tự", "info");
+    clog("• /used email voucher [STT] - Đánh dấu đã sử dụng", "info");
+    clog("• /clear - Xóa log terminal", "info");
+    clog("• /stats - Hiển thị thống kê hệ thống", "info");
+    clog("• /users - Hiển thị danh sách người dùng", "info");
+    clog("• /search email - Tìm kiếm voucher của user", "info");
+    clog("• /export [format] - Xuất dữ liệu (json/csv)", "info");
+    clog("• Ví dụ: /give user@domain.com voucher 20 25", "info");
+  } else if (c) {
+    clearOwnerLogs();
+  } else if (s) {
+    clog("📊 Thống kê hệ thống:", "info");
+    clog("• Tổng users: " + allUsers.length, "info");
+    clog("• Tổng vouchers: " + allVouchers.length, "info");
+    clog("• Đã sử dụng: " + allVouchers.filter(function(v) { return v.used; }).length, "info");
+    clog("• Còn hiệu lực: " + allVouchers.filter(function(v) { return !v.used; }).length, "info");
+  } else if (us) {
+    clog("👥 Danh sách users (" + allUsers.length + "):", "info");
+    allUsers.forEach(function(u, i) {
+      clog((i+1) + ". " + u.email + " (" + (u.voucherCount || 0) + " vouchers)", "info");
+    });
+  } else if (se) {
+    var email = se[1];
+    var userVouchers = allVouchers.filter(function(v) { return v.userEmail === email; });
+    clog("🔍 Tìm voucher cho " + email + ":", "info");
+    if (userVouchers.length === 0) {
+      clog("• Không tìm thấy voucher nào", "info");
+    } else {
+      userVouchers.forEach(function(v, i) {
+        var status = v.used ? "Đã dùng" : "Còn hiệu lực";
+        clog((i+1) + ". " + v.percent + "% - " + status, "info");
+      });
+    }
+  } else if (ex) {
+    var format = ex[1] || "json";
+    clog("📤 Xuất dữ liệu (" + format + "):", "info");
+    var data = {
+      users: allUsers.length,
+      vouchers: allVouchers.length,
+      used: allVouchers.filter(function(v) { return v.used; }).length,
+      active: allVouchers.filter(function(v) { return !v.used; }).length
+    };
+    clog("• " + JSON.stringify(data, null, 2), "info");
+  } else if (g) {
+    cmdGive(g[1], parseFloat(g[2]));
+  } else if (r) {
+    cmdRemove(r[1], parseInt(r[2]));
+  } else if (u) {
+    cmdUsed(u[1], parseInt(u[2]));
   } else {
-    console.error("cmd-log element not found!"); // Debug
+    clog("❌ Lệnh không hợp lệ. Gõ /help để xem danh sách lệnh.", "error");
   }
 }
+
+// Render owner logs in terminal
+function renderOwnerLogs() {
+  var cmdLog = document.getElementById("cmd-log");
+  if (!cmdLog) return;
+  
+  var logsHtml = '<div class="cl inf">VoucherVault Owner Terminal — gõ lệnh bên dưới</div>';
+  
+  ownerLogs.forEach(function(log) {
+    var time = new Date(log.timestamp).toLocaleTimeString("vi-VN");
+    var className = "cl " + (log.type || "command");
+    var prefix = log.type === "command" ? "$" : "•";
+    
+    logsHtml += '<div class="' + className + '"><span class="timestamp">[' + time + ']</span> ' + prefix + ' ' + log.message + '</div>';
+  });
+  
+  cmdLog.innerHTML = logsHtml;
+  cmdLog.scrollTop = cmdLog.scrollHeight;
+}
+
+// Log command to Firebase
+function logCommand(command) {
+  if (!isOwner) return;
+  
+  var logEntry = {
+    command: command,
+    type: "command",
+    message: command,
+    timestamp: Date.now()
+  };
+  
+  db.collection("ownerLogs").add(logEntry).catch(function(e) {
+    console.error("Failed to log command:", e);
+  });
+}
+
+// Log action to Firebase
+function logAction(action, message) {
+  if (!isOwner) return;
+  
+  var logEntry = {
+    command: action,
+    type: "info",
+    message: message,
+    timestamp: Date.now()
+  };
+  
+  db.collection("ownerLogs").add(logEntry).catch(function(e) {
+    console.error("Failed to log action:", e);
+  });
+}
+
+// Log message to Firebase
+function clog(message, type) {
+  if (!isOwner) return;
+  
+  var logEntry = {
+    command: type || "info",
+    type: type || "info",
+    message: message,
+    timestamp: Date.now()
+  };
+  
+  db.collection("ownerLogs").add(logEntry).catch(function(e) {
+    console.error("Failed to log message:", e);
+  });
+}
+
+// Load owner logs from Firebase
+function loadOwnerLogs() {
+  if (!isOwner) return;
+  
+  db.collection("ownerLogs").orderBy("timestamp", "desc").limit(100).onSnapshot(function(snap) {
+    ownerLogs = [];
+    snap.forEach(function(doc) {
+      var data = doc.data();
+      ownerLogs.push({
+        id: doc.id,
+        command: data.command,
+        type: data.type || "command",
+        message: data.message,
+        timestamp: data.timestamp
+      });
+    });
+    renderOwnerLogs();
+  });
+}
+
+// Clear logs from Firebase
+function clearOwnerLogs() {
+  if (!isOwner) return;
+  
+  // Delete old logs (keep last 50)
+  db.collection("ownerLogs").orderBy("timestamp", "asc").limit(50).get()
+    .then(function(querySnapshot) {
+      var batch = db.batch();
+      querySnapshot.forEach(function(doc) {
+        batch.delete(doc.ref);
+      });
+      return batch.commit();
+    })
+    .then(function() {
+      clog("📝 Log đã được dọn dẹp (giữ 50 logs gần nhất)", "info");
+    })
+    .catch(function(e) {
+      console.error("Failed to clear logs:", e);
+    });
+}
+
+// ...
 
 function cmdGive(email, pct) {
   if (pct <= 0 || pct > 100) { clog("❌ Phần trăm phải từ 1 đến 100", "error"); return; }
@@ -1391,6 +1536,7 @@ function cmdGive(email, pct) {
   }).then(function() {
     clog("✅ Đã cấp voucher " + pct + "% cho " + email, "success");
     logAction("GIVE", "Cấp voucher " + pct + "% cho " + email);
+    logCommand("/give " + email + " " + pct);
     toast("Đã cấp voucher " + pct + "% cho " + email);
   }).catch(function(e) { clog("❌ " + e.message, "error"); });
 }
